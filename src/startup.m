@@ -9,9 +9,10 @@ dirname = dirname(1:end - 2 - numel(fname));
 
 addpath(dirname(1:end - 1))
 
-addpath([dirname, 'eval'])
-addpath([dirname, 'model'])
-addpath([dirname, 'sampler'])
+addpath([dirname, 'eval']);
+addpath([dirname, 'model']);
+addpath([dirname, 'sampler']);
+addpath([dirname, 'util']);
 
 % setup the GPML package
 run([dirname, 'vendor/', 'gpml-matlab-v3.2/', 'startup'])
