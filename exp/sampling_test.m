@@ -19,7 +19,7 @@ title('Prediction with learned hyperparameters (and correct process structure)')
 hold on;
 plot(z, poi, 'g-');
 plot([-5 5], [0 0], 'k-');
-plot([-5 5], [-1.3 -1.3], 'k--');
+plot([-5 5], [spar.target spar.target], 'k--');
 
 % Now sample a population of 50 individuals accoriding to PoI
 nsamp = 100;
