@@ -4,13 +4,13 @@ clear all; close all; clc;
 
 % Train a model on the samples and make predictions
 
-M = modelInit(); % the default
+M = modelInit(1); % the default
 M = modelTrain(M, x, y);
 
 z = linspace(-5, 5, 101)';
 [m s2] = modelPredict(M, z);
 
-poi = samplerGetPOI(M, z, -1.3);
+poi = modelGetPOI(M, z, -1.3);
 
 plotErr1(z, m, s2, x, y);
 title('Prediction with learned hyperparameters (and correct process structure)');
