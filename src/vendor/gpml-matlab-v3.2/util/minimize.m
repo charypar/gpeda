@@ -74,7 +74,8 @@ i = 0;                                            % zero the run length counter
 ls_failed = 0;                             % no previous line search has failed
 [f0 df0] = feval(f, X, varargin{:});          % get function value and gradient
 Z = X; X = unwrap(X); df0 = unwrap(df0);
-fprintf('%s %6i;  Value %4.6e\r', S, i, f0);
+% EDITED turned off the debug output
+% fprintf('%s %6i;  Value %4.6e\r', S, i, f0);
 if exist('fflush','builtin') fflush(stdout); end
 fX = f0;
 i = i + (length<0);                                            % count epochs?!
@@ -88,22 +89,35 @@ while i < abs(length)                                      % while not finished
   if length>0, M = MAX; else M = min(MAX, -length-i); end
 
   while 1                             % keep extrapolating as long as necessary
-    x2 = 0; f2 = f0; d2 = d0; f3 = f0; df3 = df0;
+    x2 = 0; f2 = f0; d2 = d0; f3 = f0; df3 = df0; f3t = f3; df3t = df3;
     success = 0;
     while ~success && M > 0
       try
         M = M - 1; i = i + (length<0);                         % count epochs?!
         
-        [f3 df3] = feval(f, rewrap(Z,X+x3*s), varargin{:});
-        df3 = unwrap(df3);
-        if isnan(f3) || isinf(f3) || any(isnan(df3)+isinf(df3)), error(''), end
+        [f3t dft] = feval(f, rewrap(Z,X+x3*s), varargin{:});
+                
+        df3t = unwrap(df3t);
+        if isnan(f3t) || isinf(f3t) || any(isnan(df3t)+isinf(df3t))
+            throw(MException('something bad happened!'));
+        end
+        
         success = 1;
+        f3 = f3t;
+        df3 = df3t;
       catch                                % catch any error which occured in f
         x3 = (x2+x3)/2;                                  % bisect and try again
       end
     end
-    if f3 < F0, X0 = X+x3*s; F0 = f3; dF0 = df3; end         % keep best values
+    
+    if f3 < F0
+        X0 = X+x3*s;
+        F0 = f3; 
+        dF0 = df3; 
+    end         % keep best values
+    
     d3 = df3'*s;                                                    % new slope
+    
     if d3 > SIG*d0 || f3 > f0+x3*RHO*d0 || M == 0  % are we done extrapolating?
       break
     end
