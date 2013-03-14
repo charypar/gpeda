@@ -10,8 +10,10 @@ dirname = dirname(1:end - 2 - numel(fname));
 addpath(dirname(1:end - 1))
 
 addpath([dirname, 'eval']);
-addpath([dirname, 'model']);
+addpath([dirname, 'doe']);
 addpath([dirname, 'sampler']);
+addpath([dirname, 'stop']);
+addpath([dirname, 'model']);
 addpath([dirname, 'util']);
 
 % setup the GPML package
