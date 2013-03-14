@@ -10,7 +10,7 @@ function s = sampleGibbs(M, lb, ub, nsamples, spar);
 
 % Parameters
 thin = M.dim * 5;       % the number of discarted samples between draws
-margin_discr = 50;      % the number of sampels the marginal's inverse
+margin_discr = 200;      % the number of sampels the marginal's inverse
                         % CDF is estimated from
 
 % Prior Values -- generate all the variables from Normal distribution
@@ -29,6 +29,7 @@ for i = 1:nsamples
       % at (x_1,...,x_(k-1), X, x_(k+1),...,x_(M.dim))
       x_grid = linspace(lb(k),ub(k),margin_discr)';
       poi_grid = modelGetPOI(M, x_grid, spar.target);
+      % FIXME: Danger, if it get zeros everywhere, it CRASHES :(
       F2 = cumsum(poi_grid);
       F2 = F2 ./ F2(end);               % calculate PDF by dividing by the integral
       F = (F2(1:end-1)+F2(2:end))/2;    % midpoints CDF (length(F2) - 1)
