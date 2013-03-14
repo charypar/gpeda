@@ -11,7 +11,7 @@ addpath(dirname(1:end - 1))
 
 addpath([dirname, 'eval']);
 addpath([dirname, 'doe']);
-addpath([dirname, 'sampler']);
+addpath([dirname, 'sample']);
 addpath([dirname, 'stop']);
 addpath([dirname, 'model']);
 addpath([dirname, 'util']);

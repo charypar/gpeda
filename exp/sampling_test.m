@@ -23,6 +23,6 @@ plot([-5 5], [spar.target spar.target], 'k--');
 
 % Now sample a population of 50 individuals accoriding to PoI
 nsamp = 100;
-population = samplerSample(M, -5, 5, nsamp, spar);
+population = sampleMCPOI(M, -5, 5, nsamp, spar);
 
 plot(population, zeros(1, nsamp), 'rx');

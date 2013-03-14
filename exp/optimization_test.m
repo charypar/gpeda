@@ -10,6 +10,7 @@ opts.doe.n = 20; % initial dataset
 opts.sampler.target = 0.001; % testing on x^2, we know the target
 opts.stop.evaluations = 100;
 
-xopt = gpeda(opts, @evalHandle, @doeRandom, @samplerMCPOI, [], @stopNEvals, @gpedaStep1d);
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleMCPOI, [], @stopNEvals, @gpedaStep1d);
 
 xopt
+run

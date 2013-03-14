@@ -46,6 +46,7 @@ run.attempts = {}
 
 att = 1
 run.attempts{att} = initAttempt();
+run.evaluations = length(run.attempts{att}.dataset.y);
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
   att = run.attempt;
@@ -60,14 +61,14 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   % sample new population
   disp(['Sampling population ' int2str(it)]);
-  pop = samplerSample(M, lb, ub, n, options.sampler);
+  pop = sample(sampler, M, lb, ub, options.popSize, options.sampler);
   run.attempts{att}.populations{it} = pop;
 
   % evaluate and add to dataset
   disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
   [m s2] = modelPredict(M, pop);
   y = feval(eval, pop, m, s2, options.eval);
-  run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(run.attempts{att}.dataset.y);
+  run.evaluations = run.evaluations + length(run.attempts{att}.dataset.y);
 
   % store the best so far
   [ymin i] = min(y);
@@ -97,6 +98,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   
     % initialize new attempt
     run.attempts{att} = initAttempt();
+    run.evaluations = run.evaluations + length(run.attempts{att}.dataset.y);
   end
 end
 
@@ -107,6 +109,10 @@ bestx = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.x(end, :)' )))'
 
 [yopt iopt] = min(besty)
 xopt = bestx(iopt, :);
+
+if nargout > 0
+  varargout{1} = run;
+end
 
 % Support functions
 
@@ -125,8 +131,6 @@ function attempt = initAttempt()
   attempt.dataset.x = feval(doe, lb, ub, options.doe); 
   attempt.dataset.y = feval(eval, attempt.dataset.x, [], [], options.eval);
 
-  attempt.evaluations = length(attempt.dataset.y);
-
   attempt.populations = {};
 
   attempt.bests.x = [];    % a matrix with best input vectors rows 
@@ -144,15 +148,15 @@ function tf = evalconds(conds, run, opts)
   end
 end
 
-function pop = sample(samplers, opts)
-  if is(samplers, 'function_handle')
-    pop = feval(samplers, opts);
+function pop = sample(samplers, M, lb, ub, n, opts)
+  if isa(samplers, 'function_handle')
+    pop = feval(samplers, M, lb, ub, n, opts);
   else
     for i = 1:length(samplers)
-      samplers{i} = feval(samplers{i}, opts{i});
+      samplers{i} = feval(samplers{i}, M, lb, ub, n, opts{i});
     end
     pop = cellReduce(samplers, @(r, in) ( [r; in] ), []);
-    %FIXME make sure the population is composed of unique individuals?
+    % FIXME make sure the population is composed of unique individuals?
   end
 end
 
