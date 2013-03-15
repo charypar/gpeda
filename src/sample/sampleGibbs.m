@@ -1,4 +1,4 @@
-function s = sampleGibbs(M, lb, ub, nsamples, spar);
+function s = sampleGibbs(M, lb, ub, nsamples, spar)
 % Gibbs MCMC sampler based on Probability of improvement
 %
 % M             GP model
@@ -6,12 +6,15 @@ function s = sampleGibbs(M, lb, ub, nsamples, spar);
 % nsamples      the number of samples to be drawn
 % spar.target   target value for computing probability of improvement
 
-% TODO (FIXME): it generates samples even outside (lb,ub) region
-
 % Parameters
-thin = M.dim * 5;       % the number of discarted samples between draws
-margin_discr = 200;      % the number of sampels the marginal's inverse
-                        % CDF is estimated from
+thin = M.dim * 5;       % the number of discarted samples between actual draws
+gridSize = 200;         % the number of samples of POI from which the 
+                        % marginal's inverse CDF is estimated
+nSamplePOITries = 5;    % how many times the POI is sampled, each time
+                        % with double dense grid (the *gridSize*
+                        % is doubled each try)
+minSampledPoints = 8;   % the minimum number of points to get
+                        % good-shaped probability
 
 % Prior Values -- generate all the variables from Normal distribution
 x = randn(1,M.dim);
@@ -27,34 +30,55 @@ for i = 1:nsamples
     for k = randperm(M.dim)
       % Estimate inverse CDF of the chosen marginal
       % at (x_1,...,x_(k-1), X, x_(k+1),...,x_(M.dim))
-      x_grid = linspace(lb(k),ub(k),margin_discr)';
-      poi_grid = modelGetPOI(M, x_grid, spar.target);
-      % FIXME: Danger, if it get zeros everywhere, it CRASHES :(
-      F2 = cumsum(poi_grid);
-      F2 = F2 ./ F2(end);               % calculate PDF by dividing by the integral
-      F = (F2(1:end-1)+F2(2:end))/2;    % midpoints CDF (length(F2) - 1)
-      % augment x_grid for being able to have boundary values 0.0 and 1.0
-      n = length(F);
-      x_2end = x_grid(2:end);           % x_values for midpoints CDF
-      % add lowest linear approximation at 0
-      xCDFRange = [x_2end(1) - F(1)*(x_2end(2)-x_2end(1))/(F(2)-F(1)); ...
-        x_2end];
-      % expand the CDF at 0 too
-      F = [0; F];
-      if ((F(n)-F(n-1)) > 0.0001)
-        % highest linear approximation for 1
-        xCDFRange = [xCDFRange; x_2end(n) + (1-F(n))*(x_2end(n)-x_2end(n-1))/(F(n)-F(n-1))];
-        F = [F; 1];
+      
+      % sample the probability of improvement (POI)
+      % if less than *minSampledPoints* with non zero probability 
+      % is returned, give it *nSamplePOITries* tries doubling the number 
+      % of sampled points each time
+      nPoints = 0; tryNo = 1; sampleSize = gridSize;
+      while ((nPoints < minSampledPoints) && (tryNo <= nSamplePOITries))
+        xGrid = linspace(lb(k), ub(k), sampleSize)';
+        poi_density = modelGetPOI(M, xGrid, spar.target);
+        empIntegral = sum(poi_density);
+
+        nonzeroProb = (poi_density./empIntegral > eps);
+        nPoints = sum(nonzeroProb);
+        sampleSize = 2 * sampleSize;
+        tryNo = tryNo + 1;
       end
-      % handle the situations with zero derivative -- find out points
-      % with zero difference
-      dd = F(2:end,:) - F(1:end-1);
-      Fd = F(dd ~= 0);
-      xCDFRangeD = xCDFRange(dd ~= 0);
-      % draw a sample from the final distribution
-      % - inverse CDF is taken as linear interpolation of inverse CDF
-      % - this iCDF simply converse sample from uniform distribution
-      new_x = interp1(Fd, xCDFRangeD, rand(), 'linear', 'extrap');
+
+      xGrid = xGrid(nonzeroProb);
+      poi_density = poi_density(nonzeroProb);
+      
+      if (nPoints == 0)
+        error('sampleGibbs(): There is no probability of improvement. Giving up.');
+        return
+      end
+      if (nPoints == 1)
+        warning('sampleGibbs(): There is practically zero probability of improvement. Numerical instability possible.');
+        F = [0; 0.5; 1];
+        kernel_width = 0.005 * (ub(k) - lb(k));
+        xGrid = xGrid + kernel_width * [-1 0 1];
+      else
+        if (nPoints < minSampledPoints)
+          % warning('sampleGibbs(): The probability of improvement is very local. Numerical instability possible.')
+        end
+        F_step = cumsum(poi_density);             % empirical step-like cumsum; last item = integral
+        F_step = F_step ./ F_step(end);           % calculate empirical CDF by dividing by the integral
+        F = ([0; F_step(1:end-1)] + F_step)/2;    % midpoints CDF
+        % augment the midpoints CDF on bounds to start at 0 and end at 1
+        %   copy slope of this parts from the first/last part of the midpoint CDF
+        xGrid = [xGrid(1) - F(1)*(xGrid(2)-xGrid(1))/(F(2)-F(1)); ...
+          xGrid; ...
+          xGrid(end) + (1-F(end))*(xGrid(end)-xGrid(end-1))/(F(end)-F(end-1))];
+        F = [0; F; 1];
+      end
+
+      % draw a sample from the estimated distribution
+      % - sample the uniform U[0,1] and put this value into the inverse CDF
+      % - inverse CDF is taken as linear interpolation of inverted 
+      %   empirical CDF
+      new_x = interp1(F, xGrid, rand(), 'linear', 'extrap');
       % replace the current covariate by this sampled value
       x(k) = new_x;
     end
