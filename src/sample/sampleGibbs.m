@@ -38,7 +38,9 @@ for i = 1:nsamples
       nPoints = 0; tryNo = 1; sampleSize = gridSize;
       while ((nPoints < minSampledPoints) && (tryNo <= nSamplePOITries))
         xGrid = linspace(lb(k), ub(k), sampleSize)';
-        poi_density = modelGetPOI(M, xGrid, spar.target);
+        xSpace = repmat(x,length(xGrid),1);
+        xSpace(:,k) = xGrid;
+        poi_density = modelGetPOI(M, xSpace, spar.target);
         empIntegral = sum(poi_density);
 
         nonzeroProb = (poi_density./empIntegral > eps);
@@ -47,7 +49,7 @@ for i = 1:nsamples
         tryNo = tryNo + 1;
       end
 
-      xGrid = xGrid(nonzeroProb);
+      xGrid = xGrid(nonzeroProb,:);
       poi_density = poi_density(nonzeroProb);
       
       if (nPoints == 0)
@@ -73,8 +75,8 @@ for i = 1:nsamples
           xGrid(end) + (1-F(end))*(xGrid(end)-xGrid(end-1))/(F(end)-F(end-1))];
         F = [0; F; 1];
       end
-
-      % draw a sample from the estimated distribution
+      
+      % draw a sample from the estimated marginal 1D distribution
       % - sample the uniform U[0,1] and put this value into the inverse CDF
       % - inverse CDF is taken as linear interpolation of inverted 
       %   empirical CDF
