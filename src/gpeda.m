@@ -46,7 +46,6 @@ run.attempts = {}
 
 att = 1
 run.attempts{att} = initAttempt();
-run.evaluations = length(run.attempts{att}.dataset.y);
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
   att = run.attempt;
@@ -68,14 +67,20 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
   [m s2] = modelPredict(M, pop);
   y = feval(eval, pop, m, s2, options.eval);
-  run.evaluations = run.evaluations + length(run.attempts{att}.dataset.y);
+  run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(y);
 
   % store the best so far
   [ymin i] = min(y);
   if size(run.attempts{att}.bests.yms2, 1) < 1 || ymin < run.attempts{att}.bests.yms2(end, 1)
+    % record improved solution
     disp(['Best solution improved to ', num2str(ymin)]);
     run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
     run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
+  else
+    disp(['Best solution did not improve']);
+    % record unbeaten last solution
+    run.attempts{att}.bests.x(end + 1, :) = run.attempts{att}.bests.x(end, :);
+    run.attempts{att}.bests.yms2(end + 1, :) = run.attempts{att}.bests.yms2(end, :);
   end
 
   if nargin > 6 && isa(varargin{1}, 'function_handle')
@@ -98,7 +103,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   
     % initialize new attempt
     run.attempts{att} = initAttempt();
-    run.evaluations = run.evaluations + length(run.attempts{att}.dataset.y);
   end
 end
 
@@ -125,12 +129,12 @@ function attempt = initAttempt()
   end
 
   attempt.iterations = 1;
-  attempt.evaluations = 0;
 
   % generate initial dataset
   attempt.dataset.x = feval(doe, lb, ub, options.doe); 
   attempt.dataset.y = feval(eval, attempt.dataset.x, [], [], options.eval);
-
+  attempt.evaluations = length(attempt.dataset.y);
+  
   attempt.populations = {};
 
   attempt.bests.x = [];    % a matrix with best input vectors rows 

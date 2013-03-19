@@ -1,19 +1,26 @@
 clear; close all; clc;
 
-opts.popSize = 10;
+opts.popSize = 5;
 % % 1D
 opts.lowerBound = -5;
 opts.upperBound =  5;
 
-opts.eval.handle = @(x) ( sum(x.^2, 2) );
-% opts.eval.handle = @rastrigin;
+% opts.eval.handle = @(x) ( sum(x.^2, 2) );
+opts.eval.handle = @rastrigin;
+target = 1e-5;
 
-opts.doe.n = 20; % initial dataset
-opts.sampler.target = 0; % testing on x^2, we know the target
-opts.stop.evaluations = 100;
+opts.doe.n = 10; % initial dataset
+opts.sampler.target = target; % testing on x^2, we know the target
+opts.restart = {
+  struct('generations', 10)
+};
+opts.stop = {
+  struct('evaluations', 500),
+  struct('target', target)
+};
 
 % % 1D
-[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], @stopNEvals, @gpedaStep1d);
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, {@stopStallGen}, {@stopTotEvals, @stopTargetReached}, @gpedaStep1d);
 
 xopt
 run

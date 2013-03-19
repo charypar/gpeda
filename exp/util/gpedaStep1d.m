@@ -12,7 +12,7 @@ best = run.attempts{att}.bests;
 lb = run.options.lowerBound;
 ub = run.options.upperBound;
 
-z = linspace(lb, ub, 101)';
+z = linspace(lb, ub, 501)';
 [m s2] = modelPredict(M, z);
 
 poi = modelGetPOI(M, z, run.options.sampler.target);
