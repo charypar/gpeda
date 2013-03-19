@@ -11,7 +11,7 @@ opts.doe.n = 20; % initial dataset
 opts.sampler.target = 0; % testing on x^2, we know the target
 opts.stop.evaluations = 100;
 
-[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], @stopNEvals, @gpedaStep2d);
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], @stopTotEvals, @gpedaStep2d);
 
 xopt
 run
