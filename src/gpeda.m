@@ -61,7 +61,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   % sample new population
   disp(['Sampling population ' int2str(it)]);
-  pop = sample(sampler, M, lb, ub, options.popSize, options.sampler);
+  pop = sample(sampler, M, lb, ub, options.popSize, run.attempts{att}, options.sampler);
   run.attempts{att}.populations{it} = pop;
 
   % evaluate and add to dataset
@@ -73,7 +73,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % store the best so far
   [ymin i] = min(y);
   if size(run.attempts{att}.bests.yms2, 1) < 1 || ymin < run.attempts{att}.bests.yms2(end, 1)
-    disp(['Best solution improved to ', num2str(ymin)]);
+    fprintf('Best solution improved to f(%s) = %f.\n', num2str(pop(i,:)), ymin);
     run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
     run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
   end
@@ -133,8 +133,9 @@ function attempt = initAttempt()
 
   attempt.populations = {};
 
-  attempt.bests.x = [];    % a matrix with best input vectors rows 
-  attempt.bests.yms2 = []; % a matrix with rows [y m s2] for the best individual in each generation
+  [ym, im] = min(attempt.dataset.y);
+  attempt.bests.x = attempt.dataset.x(im,:);    % a matrix with best input vectors rows 
+  attempt.bests.yms2 = [ym 0 0]; % a matrix with rows [y m s2] for the best individual in each generation
 end
 
 function tf = evalconds(conds, run, opts)
@@ -148,12 +149,12 @@ function tf = evalconds(conds, run, opts)
   end
 end
 
-function pop = sample(samplers, M, lb, ub, n, opts)
+function pop = sample(samplers, M, lb, ub, n, thisAttempt, opts)
   if isa(samplers, 'function_handle')
-    pop = feval(samplers, M, lb, ub, n, opts);
+    pop = feval(samplers, M, lb, ub, n, thisAttempt, opts);
   else
     for i = 1:length(samplers)
-      samplers{i} = feval(samplers{i}, M, lb, ub, n, opts{i});
+      samplers{i} = feval(samplers{i}, M, lb, ub, n, thisAttempt, opts{i});
     end
     pop = cellReduce(samplers, @(r, in) ( [r; in] ), []);
     % FIXME make sure the population is composed of unique individuals?

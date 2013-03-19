@@ -28,16 +28,21 @@ xy_column(:,2) = reshape(yy, n_points, 1);
 poi = modelGetPOI(M, xy_column, run.options.sampler.target);
 
 % plot the surface of mean/prediction and error contour lines
+subplot(1,2,1);
+hold off;
 plotErr2(xy_column, m, s2, ds.x, ds.y);
 
+% hold on;
+subplot(1,2,2);
+[~, sf] = contour(xx, yy, reshape(poi, gridSize, gridSize));
+colorbar();
 hold on;
-[~, sf] = contour3(xx, yy, reshape(poi, gridSize, gridSize));
-set(sf,'EdgeColor','green')
 % plot([lb ub], run.options.sampler.target * [1 1], 'g--');
 
-scatter3(pop(:,1), pop(:,2), zeros(1, length(pop)), 'ro');
+% scatter3(pop(:,1), pop(:,2), zeros(1, length(pop)), 'ro');
+scatter(pop(:,1), pop(:,2), 'ro');
 
-scatter3(best.x(end, 1), best.x(end,2), best.yms2(end, 1), 'mo');
+scatter(best.x(end, 1), best.x(end,2), 'bo');
 hold off;
 
 pause;
