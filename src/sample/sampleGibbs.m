@@ -6,17 +6,33 @@ function s = sampleGibbs(M, lb, ub, nsamples, attempt, spar)
 % nsamples      the number of samples to be drawn
 % spar.target   target value for computing probability of improvement
 
-% currBestX = attempt.bests.x(end,:);
+startX = attempt.bests.x(end,:);
 currBestY = attempt.bests.yms2(end,1);
+currWorstY = min(attempt.dataset.y);
 
 thresholds = [0 0.0001 0.001 (0.01 * (1:13)) 0.15 0.20 0.25 ...
   0.30 0.40 0.50 0.75 1.0 1.5 2.0 3.0];
-targets = currBestY * (1 - thresholds .* abs(currBestY));
+thresholds = flipdim(thresholds, 2);
+targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 
 errCode = -1; i = 1;
 while (errCode ~= 0 && i <= length(thresholds))
   density = @(xSpace) modelGetPOI(M, xSpace, targets(i));
-  [s, errCode] = gibbsSampler(density, lb, ub, nsamples);
+
+  % DEBUG
+  % debugGridSize = 201;
+  % [xyColumn xm ym] = grid2d(lb, ub, debugGridSize);
+  % poi = density(xyColumn);
+  % % f = figure();
+  % s1 = subplot(2,2,[1 3]);
+  % [~, sf] = contour(xm, ym, reshape(poi, debugGridSize, debugGridSize));
+  % colorbar();
+  % s2(1) = subplot(2,2,2);
+  % s2(2) = subplot(2,2,4);
+  % debugArgs = {};
+  % /DEBUG
+
+  [s, errCode] = gibbsSampler(density, lb, ub, nsamples, startX); % , debugArgs);
   if (errCode)
     disp(['sampleGibbs(): There is no probability of improvement with threshold ' num2str(thresholds(i))]);
   end
@@ -30,7 +46,7 @@ end
 
 
 
-function [s, errCode] = gibbsSampler(density, lb, ub, nsamples)
+function [s, errCode] = gibbsSampler(density, lb, ub, nsamples, startX, debugArgs)
 % Gibbs MCMC sampler itself
 %
 % M             GP model
@@ -41,7 +57,7 @@ function [s, errCode] = gibbsSampler(density, lb, ub, nsamples)
 % Parameters
 dim = length(lb);       % dimension of the input space
 thin = dim * 20;         % the number of discarted samples between actual draws
-gridSize = 200;         % the number of samples of POI from which the 
+gridSize = 400;         % the number of samples of POI from which the 
                         % marginal's inverse CDF is estimated
 nSamplePOITries = 5;    % how many times the POI is sampled, each time
                         % with double dense grid (the *gridSize*
@@ -50,19 +66,22 @@ minSampledPoints = 8;   % the minimum number of points to get
                         % good-shaped probability
 
 % Prior Values -- generate all the variables from Normal distribution
-% FIXME: has to be done better -- higher probabilities have to be preffered
-x = randn(1,dim);
+% centered along current best point
+x = startX .* ((ub - lb)/8 .* randn(1,dim));
 
 %Allocate Space to Save Gibbs Sampling Draws
 s = zeros(nsamples,dim);
 errCode = 0;
+highestPOI = -Inf;
+highestPOIX = zeros(1,dim);
 
 % Run the Gibbs Sampler...
 % ... for the specified number of draws
-for i = 1:nsamples
+% - leave one sample for the biggest PoI found by this run
+for i = 1:(nsamples - 1)
   for j = 1:thin
     % take the variables in random order
-    for k = randperm(dim)
+    for k = 1:dim % randperm(dim)
       % Estimate inverse CDF of the chosen marginal
       % at (x_1,...,x_(k-1), X, x_(k+1),...,x_(dim))
       
@@ -77,6 +96,12 @@ for i = 1:nsamples
         xSpace(:,k) = xGrid;
         poi_density = density(xSpace);
         empIntegral = sum(poi_density);
+        
+        % save maximal POI found so far
+        [maxPOI, mpi] = max(poi_density);
+        if (maxPOI > highestPOI)
+          highestPOI = maxPOI; highestPOIX = xSpace(mpi,:);
+        end
 
         nonzeroProb = (poi_density./empIntegral > eps);
         nPoints = sum(nonzeroProb);
@@ -122,7 +147,30 @@ for i = 1:nsamples
       new_x = interp1(F, xGrid, rand(), 'linear', 'extrap');
       % replace the current covariate by this sampled value
       x(k) = new_x;
+
+      % DEBUG
+      % plot(debugArgs{2}(k), xSpace(nonzeroProb,k), poi_density, 'g-');
+      % margins = [x' x'];
+      % margins(k,:) = [lb(k) ub(k)];
+      % hold(debugArgs{1},'on');
+      % plot(debugArgs{1}, margins(1,:), margins(2,:), 'g-');
+      % hold(debugArgs{1},'off');
+      % /DEBUG
     end
+    % DEBUG
+    % hold(debugArgs{1},'on');
+    % plot(debugArgs{1}, x(1), x(2), 'r+');
+    % hold(debugArgs{1},'off');
+    % /DEBUG
   end
   s(i,:) = x;
+  % DEBUG
+  % hold(debugArgs{1},'on');
+  % plot(debugArgs{1}, x(1), x(2), 'b*');
+  % hold(debugArgs{1},'off');
+  % /DEBUG
 end
+
+% save the best POI found
+s(nsamples,:) = highestPOIX;
+
