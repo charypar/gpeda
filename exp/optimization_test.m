@@ -1,6 +1,6 @@
 clear; close all; clc;
 
-opts.popSize = 5;
+opts.popSize = 8;
 % % 1D
 opts.lowerBound = -5;
 opts.upperBound =  5;
@@ -9,10 +9,10 @@ opts.upperBound =  5;
 opts.eval.handle = @rastrigin;
 target = 1e-5;
 
-opts.doe.n = 10; % initial dataset
+opts.doe.n = 20; % initial dataset
 opts.sampler.target = target; % testing on x^2, we know the target
 opts.restart = {
-  struct('generations', 4)
+  struct('generations', 5)
 };
 opts.stop = {
   struct('evaluations', 200),

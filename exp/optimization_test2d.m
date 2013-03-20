@@ -7,11 +7,16 @@ opts.upperBound = [ 5  5];
 
 opts.eval.handle = @sphere;
 
-opts.doe.n = 20; % initial dataset
-opts.sampler.target = 0; % testing on x^2, we know the target
-opts.stop.evaluations = 100;
+t = 1e-6;
 
-[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], @stopTotEvals, @gpedaStep2d);
+opts.doe.n = 20; % initial dataset
+opts.sampler.target = t; % testing on x^2, we know the target
+opts.stop = {
+  struct('evaluations', 100),
+  struct('target', t)
+};
+
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], {@stopTotEvals, @stopTargetReached}, @gpedaStep2d);
 
 xopt
 run

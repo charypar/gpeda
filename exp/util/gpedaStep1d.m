@@ -5,7 +5,9 @@ it = run.attempts{att}.iterations;
 
 ds = run.attempts{att}.dataset;
 M = run.attempts{att}.model;
-pop = run.attempts{att}.populations{it};
+pop = run.attempts{att}.populations{end};
+
+ev = sum(cell2mat(cellMap(run.attempts, @(att) ( att.evaluations ))));
 
 best = run.attempts{att}.bests;
 
@@ -29,4 +31,8 @@ plot(pop, zeros(1, length(pop)), 'rx');
 plot(best.x(end, :), best.yms2(end, 1), 'or');
 hold off;
 
+t = sprintf('Attempt %d, generation %d (used %d evaluations)', att, it, ev);
+title(t);
+
+disp('Press any key to continue...');
 pause;

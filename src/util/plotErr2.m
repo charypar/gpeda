@@ -28,5 +28,7 @@ set(sf,'EdgeColor','red')
 % plot of the dataset
 if nargin == 5
   hold on;
-  scatter3(xt(:,1), xt(:,2), yt, 'filled');
+  stem3(xt(:,1), xt(:,2), yt(:, 1), '+');
 end
+
+

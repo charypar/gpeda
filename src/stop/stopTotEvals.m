@@ -7,4 +7,4 @@ function tf = stopTotEvals(run, opts)
 
 total = cellReduce(run.attempts, @(tot, att)( tot + att.evaluations ), 0);
 
-tf = (total + run.options.popSize > opts.evaluations)
+tf = (total + run.options.popSize > opts.evaluations);

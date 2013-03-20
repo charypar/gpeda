@@ -42,9 +42,9 @@ dim = length(lb);
 run.options = options;
 
 run.attempt = 1;
-run.attempts = {} 
+run.attempts = {};
 
-att = 1
+att = 1;
 run.attempts{att} = initAttempt();
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
@@ -53,15 +53,21 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   ds = run.attempts{att}.dataset;
   M = run.attempts{att}.model;
 
+  disp(sprintf('\n-- Attempt %d, iteration %d --', att, it));
+
   % train model
   disp(['Training model...']);
   M = modelTrain(M, ds.x, ds.y);
   run.attempts{att}.model = M;
 
   % sample new population
-  disp(['Sampling population ' int2str(it)]);
+  disp(['Sampling population ' int2str(it) '...']);
   pop = sample(sampler, M, lb, ub, options.popSize, run.attempts{att}, options.sampler);
   run.attempts{att}.populations{it} = pop;
+
+  if nargin > 6 && isa(varargin{1}, 'function_handle')
+    feval(varargin{1}, run)
+  end
 
   % evaluate and add to dataset
   disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
@@ -81,10 +87,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     % record unbeaten last solution
     run.attempts{att}.bests.x(end + 1, :) = run.attempts{att}.bests.x(end, :);
     run.attempts{att}.bests.yms2(end + 1, :) = run.attempts{att}.bests.yms2(end, :);
-  end
-
-  if nargin > 6 && isa(varargin{1}, 'function_handle')
-    feval(varargin{1}, run)
   end
 
   % add new samples to the dataset for next iteration
@@ -125,7 +127,7 @@ function attempt = initAttempt()
   if(isfield(options, 'model'))
     attempt.model = options.model;
   else
-    attempt.model = modelInit(dim)
+    attempt.model = modelInit(dim);
   end
 
   attempt.iterations = 1;

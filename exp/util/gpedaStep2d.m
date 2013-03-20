@@ -21,14 +21,23 @@ gridSize = 101;
 
 poi = modelGetPOI(M, xy_column, run.options.sampler.target);
 
+att = run.attempt;
+it = run.attempts{att}.iterations;
+ev = sum(cell2mat(cellMap(run.attempts, @(att) ( att.evaluations ))));
+
+t = sprintf('Attempt %d, generation %d (used %d evaluations)', att, it, ev);
+title(t);
+
 % plot the surface of mean/prediction and error contour lines
 subplot(1,2,1);
 hold off;
 plotErr2(xy_column, m, s2, ds.x, ds.y);
+title('Model and dataset');
 
 % hold on;
 subplot(1,2,2);
 [~, sf] = contour(xx, yy, reshape(poi, gridSize, gridSize));
+title('Probability of improvement');
 colorbar();
 hold on;
 % plot([lb ub], run.options.sampler.target * [1 1], 'g--');
@@ -39,6 +48,7 @@ scatter(pop(:,1), pop(:,2), 'ro');
 scatter(pop(end,1), pop(end,2), 'b*');
 
 scatter(best.x(end, 1), best.x(end,2), 'bo');
+
 hold off;
 
 pause;
