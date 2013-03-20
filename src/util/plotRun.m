@@ -3,7 +3,7 @@ function plotRun(run)
 
 bestys = cellReduce(cellMap(run.attempts, @(attempt)( attempt.bests.yms2(:, 1) )), @(all, run)([all; run]), []);
 attlengths = cell2mat(cellMap(run.attempts, @(att)( att.iterations )));
-resets = cumsum(attlengths - 1);
+resets = cumsum(attlengths);
 
 plot(1:length(bestys), bestys);
 xlim([1 length(bestys)]);
