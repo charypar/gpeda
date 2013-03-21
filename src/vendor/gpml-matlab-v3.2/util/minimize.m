@@ -95,7 +95,7 @@ while i < abs(length)                                      % while not finished
       try
         M = M - 1; i = i + (length<0);                         % count epochs?!
         
-        [f3t dft] = feval(f, rewrap(Z,X+x3*s), varargin{:});
+        [f3t df3t] = feval(f, rewrap(Z,X+x3*s), varargin{:});
                 
         df3t = unwrap(df3t);
         if isnan(f3t) || isinf(f3t) || any(isnan(df3t)+isinf(df3t))
@@ -109,13 +109,13 @@ while i < abs(length)                                      % while not finished
         x3 = (x2+x3)/2;                                  % bisect and try again
       end
     end
-    
+
     if f3 < F0
         X0 = X+x3*s;
         F0 = f3; 
         dF0 = df3; 
     end         % keep best values
-    
+
     d3 = df3'*s;                                                    % new slope
     
     if d3 > SIG*d0 || f3 > f0+x3*RHO*d0 || M == 0  % are we done extrapolating?
