@@ -60,6 +60,8 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   M = modelTrain(M, ds.x, ds.y);
   run.attempts{att}.model = M;
 
+  M.hyp
+
   % sample new population
   disp(['Sampling population ' int2str(it) '...']);
   pop = sample(sampler, M, lb, ub, options.popSize, run.attempts{att}, options.sampler);
@@ -79,7 +81,8 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   [ymin i] = min(y);
   if size(run.attempts{att}.bests.yms2, 1) < 1 || ymin < run.attempts{att}.bests.yms2(end, 1)
     % record improved solution
-    fprintf('Best solution improved to f(%s) = %f.\n', num2str(pop(i,:)), ymin);
+    ev = run.attempts{att}.evaluations;
+    fprintf('Best solution improved to f(%s) = %f. (used %d evaluations in this attempt)\n', num2str(pop(i,:)), ymin, ev);
     run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
     run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
   else

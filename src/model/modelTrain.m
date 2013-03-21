@@ -10,6 +10,6 @@ function Mout = modelTrain(M, x, y)
 model = struct(M); % copy the original model
 model.dataset.x = x; model.dataset.y = y; % store dataset
 
-model.hyp = minimize(model.hyp, @gp, -20, model.inffunc, model.meanfunc, model.covfunc, model.likfunc, x, y);
+model.hyp = minimize(model.hyp, @gp, -100, model.inffunc, model.meanfunc, model.covfunc, model.likfunc, x, y);
 
 Mout = model;

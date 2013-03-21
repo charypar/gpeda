@@ -28,11 +28,14 @@ else
 end
 
 if nargin < 3
-  mean = [];
+  mean = {@meanConst};
   cov = {@covSEiso};
 
   if ~isfield(hyp, 'cov')
     hyp.cov = log([1, 1]);
+  end
+  if ~isfield(hyp, 'mean')
+    hyp.mean = [0];
   end
 else
   mean = varargin{2};
