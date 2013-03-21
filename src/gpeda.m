@@ -1,4 +1,4 @@
-function [xopt varargout] = gpeda(options, eval, doe, sampler, restart, stop, varargin)
+function [xopt varargout] = gpeda(options, eval, doe, sampler, rescale, restart, stop, varargin)
 % Gausian Process based variation of estimation of distribution algorithm (EDA). Performs a
 % heuristic optimization run.
 %
@@ -45,36 +45,51 @@ run.attempt = 1;
 run.attempts = {};
 
 att = 1;
-run.attempts{att} = initAttempt();
+run.attempts{att} = initAttempt(lb, ub);
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
   att = run.attempt;
   it = run.attempts{att}.iterations;
   ds = run.attempts{att}.dataset;
   M = run.attempts{att}.model;
+  scale = run.attempts{att}.scale;
+  shift = run.attempts{att}.shift;
 
   disp(sprintf('\n-- Attempt %d, iteration %d --', att, it));
 
   % train model
   disp(['Training model...']);
   M = modelTrain(M, ds.x, ds.y);
+  % M.hyp.lik = max(M.hyp.lik, log(0.0001)); % bound sn to prevent numerical errors
   run.attempts{att}.model = M;
-
-  M.hyp
 
   % sample new population
   disp(['Sampling population ' int2str(it) '...']);
-  pop = sample(sampler, M, lb, ub, options.popSize, run.attempts{att}, options.sampler);
+  try
+    cannot_sample = 0;
+    [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
+  catch
+    disp(['Could not sample any points, giving up: ' lasterr]);
+    cannot_sample = 1;
+  end
   run.attempts{att}.populations{it} = pop;
+  run.attempts{att}.tolXDistRatios{it} = tolXDistRatio;
 
   if nargin > 6 && isa(varargin{1}, 'function_handle')
     feval(varargin{1}, run)
   end
 
+  if cannot_sample
+    break; % FIXME what do we do now?? If there is no POI for the first time, rescale
+  end
+
   % evaluate and add to dataset
   disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
+
+  x = pop .* repmat(scale, size(pop, 1), 1) + repmat(shift, size(pop, 1), 1);
   [m s2] = modelPredict(M, pop);
-  y = feval(eval, pop, m, s2, options.eval);
+
+  y = feval(eval, x, m, s2, options.eval);
   run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(y);
 
   % store the best so far
@@ -82,7 +97,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   if size(run.attempts{att}.bests.yms2, 1) < 1 || ymin < run.attempts{att}.bests.yms2(end, 1)
     % record improved solution
     ev = run.attempts{att}.evaluations;
-    fprintf('Best solution improved to f(%s) = %f. (used %d evaluations in this attempt)\n', num2str(pop(i,:)), ymin, ev);
+    fprintf('Best solution improved to f(%s) = %s. (used %d evaluations in this attempt)\n', num2str(pop(i,:)), num2str(ymin), ev);
     run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
     run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
   else
@@ -100,6 +115,14 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % and we've completed an iteration
   run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
 
+  if isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
+    run.attempt = run.attempt + 1;
+    att = run.attempt;
+    
+    [nlb nub] = computeRescaleLimits(run.attempts{att-1});
+    run.attempts{att} = initRescaleAttempt(nlb, nub);
+  end
+
   % if one of the restart conditions occurs
   if isfield(options, 'restart') && evalconds(restart, run, options.restart) 
     disp(['Restart conditions met, starting over...']);
@@ -107,7 +130,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     att = run.attempt;
   
     % initialize new attempt
-    run.attempts{att} = initAttempt();
+    run.attempts{att} = initAttempt(lb, ub);
   end
 end
 
@@ -117,7 +140,7 @@ besty = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.yms2(end, 1) ))
 bestx = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.x(end, :)' )))';
 
 [yopt iopt] = min(besty)
-xopt = bestx(iopt, :);
+xopt = bestx(iopt, :); % TODO rescale output back to original space
 
 if nargout > 0
   varargout{1} = run;
@@ -125,7 +148,8 @@ end
 
 % Support functions
 
-function attempt = initAttempt()
+function attempt = initAttempt(lb, ub)
+  dim = length(lb);
 
   if(isfield(options, 'model'))
     attempt.model = options.model;
@@ -134,10 +158,16 @@ function attempt = initAttempt()
   end
 
   attempt.iterations = 1;
+  attempt.scale = (ub - lb)/2;
+  attempt.shift = (lb + ub)/2;
 
   % generate initial dataset
-  attempt.dataset.x = feval(doe, lb, ub, options.doe); 
-  attempt.dataset.y = feval(eval, attempt.dataset.x, [], [], options.eval);
+  attempt.dataset.x = feval(doe, dim, options.doe);
+
+  x = attempt.dataset.x;
+  x = x .* repmat(attempt.scale, size(x, 1), 1) + repmat(attempt.shift, size(x, 1), 1);
+  
+  attempt.dataset.y = feval(eval, x, [], [], options.eval);
   attempt.evaluations = length(attempt.dataset.y);
   
   attempt.populations = {};
@@ -158,15 +188,16 @@ function tf = evalconds(conds, run, opts)
   end
 end
 
-function pop = sample(samplers, M, lb, ub, n, thisAttempt, opts)
+function [pop tol] = sample(samplers, M, D, n, thisAttempt, opts)
   if isa(samplers, 'function_handle')
-    pop = feval(samplers, M, lb, ub, n, thisAttempt, opts);
+    [pop tol] = feval(samplers, M, D, n, thisAttempt, opts);
   else
     for i = 1:length(samplers)
-      samplers{i} = feval(samplers{i}, M, lb, ub, n, thisAttempt, opts{i});
+      [p t] = feval(samplers{i}, M, D, n, thisAttempt, opts{i});
+      samplers{i} = [p t];
     end
     pop = cellReduce(samplers, @(r, in) ( [r; in] ), []);
-    % FIXME make sure the population is composed of unique individuals?
+    tol = cellReduce(samplers, @(r, in) ( min(r, in) ), 1);
   end
 end
 

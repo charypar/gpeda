@@ -3,6 +3,5 @@ function [m s2] = modelPredict(M, z)
 %
 % Returns mean and std. deviation for each predicted output
 
-[m s2] = gp(M.hyp, M.inffunc, M.meanfunc, M.covfunc, M.likfunc, ...
-            M.dataset.x, M.dataset.y, z);
+[m s2] = gp(M.hyp, M.inffunc, M.meanfunc, M.covfunc, M.likfunc, M.dataset.x, M.dataset.y, z);
 

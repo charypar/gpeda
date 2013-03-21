@@ -7,7 +7,7 @@ opts.upperBound =  5;
 
 % opts.eval.handle = @(x) ( sum(x.^2, 2) );
 opts.eval.handle = @rastrigin;
-target = 1e-5;
+target = 1e-7;
 
 opts.doe.n = 20; % initial dataset
 opts.sampler.target = target; % testing on x^2, we know the target
@@ -20,7 +20,7 @@ opts.stop = {
 };
 
 % % 1D
-[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, {@stopStallGen}, {@stopTotEvals, @stopTargetReached}, @gpedaStep1d);
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], {@stopStallGen}, {@stopTotEvals, @stopTargetReached}, @gpedaStep1d);
 
 
 figure;

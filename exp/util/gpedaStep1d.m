@@ -14,7 +14,7 @@ best = run.attempts{att}.bests;
 lb = run.options.lowerBound;
 ub = run.options.upperBound;
 
-z = linspace(lb, ub, 501)';
+z = linspace(-1, 1, 501)';
 [m s2] = modelPredict(M, z);
 
 poi = modelGetPOI(M, z, run.options.sampler.target);
@@ -24,7 +24,7 @@ plotErr1(z, m, s2, ds.x, ds.y);
 
 hold on;
 plot(z, poi, 'g-')
-plot([lb ub], run.options.sampler.target * [1 1], 'g--');
+plot([-1 1], run.options.sampler.target * [1 1], 'g--');
 
 plot(pop, zeros(1, length(pop)), 'rx');
 

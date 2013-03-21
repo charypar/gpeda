@@ -15,7 +15,7 @@ ub = run.options.upperBound;
 assert(max(size(lb)) == 2, 'gpedaStep2d(): Input dimensions is not 2D.');
 
 gridSize = 101;
-[xy_column xx yy] = grid2d(lb, ub, gridSize);
+[xy_column xx yy] = grid2d([-1 -1], [1 1], gridSize);
 
 [m s2] = modelPredict(M, xy_column);
 
@@ -51,4 +51,4 @@ scatter(best.x(end, 1), best.x(end,2), 'bo');
 
 hold off;
 
-pause;
+pause(1);

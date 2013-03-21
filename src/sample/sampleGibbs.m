@@ -1,4 +1,4 @@
-function s = sampleGibbs(M, lb, ub, nsamples, attempt, spar)
+function [s tolXDistRatio] = sampleGibbs(M, dim, nsamples, attempt, spar)
 % Gibbs MCMC sampler based on Probability of improvement
 %
 % M             GP model
@@ -32,7 +32,7 @@ while (errCode ~= 0 && i <= length(thresholds))
   % debugArgs = {};
   % /DEBUG
 
-  [s, errCode] = gibbsSampler(density, lb, ub, nsamples, startX); % , debugArgs);
+  [s, errCode] = gibbsSampler(density, dim, nsamples, startX); % , debugArgs);
   if (errCode)
     disp(['sampleGibbs(): There is no probability of improvement with threshold ' num2str(thresholds(i))]);
   end
@@ -43,10 +43,9 @@ if (errCode)
   error('sampleGibbs(): There is no probability of improvement. Giving up.');
 end
 
+tolXDistRatio = 1;
 
-
-
-function [s, errCode] = gibbsSampler(density, lb, ub, nsamples, startX, debugArgs)
+function [s, errCode] = gibbsSampler(density, dim, nsamples, startX, debugArgs)
 % Gibbs MCMC sampler itself
 %
 % M             GP model
@@ -55,7 +54,6 @@ function [s, errCode] = gibbsSampler(density, lb, ub, nsamples, startX, debugArg
 % spar.target   target value for computing probability of improvement
 
 % Parameters
-dim = length(lb);       % dimension of the input space
 thin = dim * 20;         % the number of discarted samples between actual draws
 gridSize = 400;         % the number of samples of POI from which the 
                         % marginal's inverse CDF is estimated
@@ -64,10 +62,12 @@ nSamplePOITries = 5;    % how many times the POI is sampled, each time
                         % is doubled each try)
 minSampledPoints = 8;   % the minimum number of points to get
                         % good-shaped probability
+sampleDistanceTol = 0.002;
+difx = 2;
 
 % Prior Values -- generate all the variables from Normal distribution
 % centered along current best point
-x = startX .* ((ub - lb)/8 .* randn(1,dim));
+x = startX .* (difx/8 .* randn(1,dim));
 
 %Allocate Space to Save Gibbs Sampling Draws
 s = zeros(nsamples,dim);
@@ -91,7 +91,7 @@ for i = 1:(nsamples - 1)
       % of sampled points each time
       nPoints = 0; tryNo = 1; sampleSize = gridSize;
       while ((nPoints < minSampledPoints) && (tryNo <= nSamplePOITries))
-        xGrid = linspace(lb(k), ub(k), sampleSize)';
+        xGrid = linspace(-1, 1, sampleSize)';
         xSpace = repmat(x,length(xGrid),1);
         xSpace(:,k) = xGrid;
         poi_density = density(xSpace);
@@ -120,7 +120,7 @@ for i = 1:(nsamples - 1)
       if (nPoints == 1)
         warning('sampleGibbs(): There is practically zero probability of improvement. Numerical instability possible.');
         F = [0; 0.5; 1];
-        kernel_width = 0.005 * (ub(k) - lb(k));
+        kernel_width = 0.005 * difx;
         xGrid = xGrid + kernel_width * [-1 0 1];
       else
         if (nPoints < minSampledPoints)
