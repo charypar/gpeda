@@ -9,3 +9,9 @@ function poi = modelGetPOI(M, x, target)
 q = (target - m) ./ sqrt(s2);
 
 poi = normcdf(q);
+
+function cdf = normcdf(x)
+  cdf = 0.5 * erfc(-(x)/(sqrt(2)));
+end
+
+end
