@@ -6,14 +6,28 @@ function [s tolXDistRatio] = sampleGibbs(M, dim, nsamples, attempt, spar)
 % nsamples      the number of samples to be drawn
 % spar.target   target value for computing probability of improvement
 
+minTolX = 0.002;        % the minimum distance in X's to any point 
+                        % in the dataset, lower produces numerical
+                        % instability (not posit. definite covariance
+                        % matrices in the GP model)
+
 startX = attempt.bests.x(end,:);
 currBestY = attempt.bests.yms2(end,1);
 currWorstY = min(attempt.dataset.y);
+tolXDistRatio = 1;
 
 thresholds = [0 0.0001 0.001 (0.01 * (1:13)) 0.15 0.20 0.25 ...
   0.30 0.40 0.50 0.75 1.0 1.5 2.0 3.0];
 thresholds = flipdim(thresholds, 2);
 targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
+
+% the minimum distance of X's in the dataset must be > minTolX
+minDist = sqrt(min(min( sq_dist(attempt.dataset.x') + eye(length(attempt.dataset.x)) )));
+if (minDist < minTolX)
+  exception = MException('gibbsSampler:NarrowDataset', ['The distances in the given dataset are below minTolX = ' num2str(minTolX)]);
+  tolXDistRatio = 0;
+  throw(exception);
+end
 
 errCode = -1; i = 1;
 while (errCode ~= 0 && i <= length(thresholds))
@@ -32,20 +46,28 @@ while (errCode ~= 0 && i <= length(thresholds))
   % debugArgs = {};
   % /DEBUG
 
-  [s, errCode] = gibbsSampler(density, dim, nsamples, startX); % , debugArgs);
+  [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x); % , debugArgs);
   if (errCode)
+    % DEBUG
     disp(['sampleGibbs(): There is no probability of improvement with threshold ' num2str(thresholds(i))]);
+    % /DEBUG
   end
   i = i + 1;
 end
 
-if (errCode)
-  error('sampleGibbs(): There is no probability of improvement. Giving up.');
+if (nTolXErrors > 0)
+  warning(['sampleGibbs(): Sampling in narrow region: nTolXErrors == ' num2str(nTolXErrors)]);
+  tolXDistRatio = nTolXErrors/nsamples;
+else
+  tolXDistRatio = 1;
 end
 
-tolXDistRatio = 1;
+if (errCode)
+  exception = MException('gibbsSampler:NoProbability', 'There is no probability of improvement.');
+  throw(exception);
+end
 
-function [s, errCode] = gibbsSampler(density, dim, nsamples, startX, debugArgs)
+function [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, dataset, debugArgs)
 % Gibbs MCMC sampler itself
 %
 % M             GP model
@@ -54,16 +76,20 @@ function [s, errCode] = gibbsSampler(density, dim, nsamples, startX, debugArgs)
 % spar.target   target value for computing probability of improvement
 
 % Parameters
-thin = dim * 20;         % the number of discarted samples between actual draws
+thin = dim * 20;        % the number of discarted samples between actual draws
 gridSize = 400;         % the number of samples of POI from which the 
                         % marginal's inverse CDF is estimated
 nSamplePOITries = 5;    % how many times the POI is sampled, each time
                         % with double dense grid (the *gridSize*
                         % is doubled each try)
 minSampledPoints = 8;   % the minimum number of points to get
-                        % good-shaped probability
-sampleDistanceTol = 0.002;
-difx = 2;
+                        % good-shaped probability and so not doubling 
+                        % density of the grid
+maxTolXErrors = 2 * nsamples;   % the maximum number of tries of new
+                                % sampling (altogether) when new X's 
+                                % are closer than *minTolX* 
+                                % from other data in the dataset
+difx = 2;               % length of the bounding box of X's
 
 % Prior Values -- generate all the variables from Normal distribution
 % centered along current best point
@@ -78,7 +104,9 @@ highestPOIX = zeros(1,dim);
 % Run the Gibbs Sampler...
 % ... for the specified number of draws
 % - leave one sample for the biggest PoI found by this run
-for i = 1:(nsamples - 1)
+nSampled = 0;
+nTolXErrors = 0;
+while ((nSampled < (nsamples-1)) && (nTolXErrors < maxTolXErrors))
   for j = 1:thin
     % take the variables in random order
     for k = 1:dim % randperm(dim)
@@ -163,7 +191,15 @@ for i = 1:(nsamples - 1)
     % hold(debugArgs{1},'off');
     % /DEBUG
   end
-  s(i,:) = x;
+  % Check the TolX condition:
+  dataset_s = [dataset; s(1:nSampled,:)];
+  min_d = min(distToDataset(x, dataset_s));
+  if (min_d < minTolX)
+    nTolXErrors = nTolXErrors + 1;
+  else
+    nSampled = nSampled + 1;
+    s(nSampled,:) = x;
+  end
   % DEBUG
   % hold(debugArgs{1},'on');
   % plot(debugArgs{1}, x(1), x(2), 'b*');
@@ -171,6 +207,29 @@ for i = 1:(nsamples - 1)
   % /DEBUG
 end
 
-% save the best POI found
-s(nsamples,:) = highestPOIX;
+if (highestPOI > -Inf)
+  % save the best POI found as the last individual in the population
+  s(nsamples,:) = highestPOIX;
+else
+  % it should be returned from this subfunction earlier!
+  error('sampleGibbs:NoProbability', 'There is no probability of improvement. THE PROGRAM SHOULD NOT COME HERE!');
+end
 
+if (nSampled < (nsamples - 1));
+  exception = MException('sampleGibbs:NarrowProbability', ...
+    ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples-1) ...
+     ') samples produced far enough from the dataset.']);
+  throw(exception);
+end
+
+end % subfunction gibbsSampler()
+
+
+function d = distToDataset(x, dataset)
+% distToDataset - computes vector of distances between *x* and *dataset*
+  xs = repmat(x, size(dataset,1), 1);
+  ds = (xs - dataset);
+  d  = sqrt(sum(ds.^2,2));
+end % subfunction distToDataset()
+
+end % function
