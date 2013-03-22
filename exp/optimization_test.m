@@ -10,6 +10,8 @@ opts.eval.handle = @rastrigin;
 target = 1e-7;
 
 opts.doe.n = 20; % initial dataset
+opts.doe.minTolX = 0.002; % min distance in dataset
+opts.doe.maxSampleTries = 20; % max. number of tries when not enough spread samples
 opts.sampler.target = target; % testing on x^2, we know the target
 opts.restart = {
   struct('generations', 5)

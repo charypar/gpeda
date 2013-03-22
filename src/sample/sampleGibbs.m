@@ -24,7 +24,7 @@ targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 % the minimum distance of X's in the dataset must be > minTolX
 minDist = sqrt(min(min( sq_dist(attempt.dataset.x') + eye(length(attempt.dataset.x)) )));
 if (minDist < minTolX)
-  exception = MException('gibbsSampler:NarrowDataset', ['The distances in the given dataset are below minTolX = ' num2str(minTolX)]);
+  exception = MException('sampleGibbs:NarrowDataset', ['The distances in the given dataset are below minTolX = ' num2str(minTolX)]);
   tolXDistRatio = 0;
   throw(exception);
 end
@@ -63,7 +63,7 @@ else
 end
 
 if (errCode)
-  exception = MException('gibbsSampler:NoProbability', 'There is no probability of improvement.');
+  exception = MException('sampleGibbs:NoProbability', 'There is no probability of improvement.');
   throw(exception);
 end
 
@@ -216,9 +216,10 @@ end
 % end
 
 if (nSampled < (nsamples));
+  s((nSampled+1):end,:) = [];
   exception = MException('sampleGibbs:NarrowProbability', ...
-    ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples-1) ...
-     ') samples produced far enough from the dataset.']);
+    ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples) ...
+     ') draws can be sampled far enough from the dataset.']);
   throw(exception);
 end
 
