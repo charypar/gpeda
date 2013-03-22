@@ -106,7 +106,7 @@ highestPOIX = zeros(1,dim);
 % - leave one sample for the biggest PoI found by this run
 nSampled = 0;
 nTolXErrors = 0;
-while ((nSampled < (nsamples-1)) && (nTolXErrors < maxTolXErrors))
+while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
   for j = 1:thin
     % take the variables in random order
     for k = 1:dim % randperm(dim)
@@ -207,15 +207,15 @@ while ((nSampled < (nsamples-1)) && (nTolXErrors < maxTolXErrors))
   % /DEBUG
 end
 
-if (highestPOI > -Inf)
-  % save the best POI found as the last individual in the population
-  s(nsamples,:) = highestPOIX;
-else
-  % it should be returned from this subfunction earlier!
-  error('sampleGibbs:NoProbability', 'There is no probability of improvement. THE PROGRAM SHOULD NOT COME HERE!');
-end
+% if (highestPOI > -Inf)
+%   % save the best POI found as the last individual in the population
+%   s(nsamples,:) = highestPOIX;
+% else
+%   % it should be returned from this subfunction earlier!
+%   error('sampleGibbs:NoProbability', 'There is no probability of improvement. THE PROGRAM SHOULD NOT COME HERE!');
+% end
 
-if (nSampled < (nsamples - 1));
+if (nSampled < (nsamples));
   exception = MException('sampleGibbs:NarrowProbability', ...
     ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples-1) ...
      ') samples produced far enough from the dataset.']);
