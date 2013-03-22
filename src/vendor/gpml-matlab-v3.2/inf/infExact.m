@@ -19,7 +19,7 @@ K = feval(cov{:}, hyp.cov, x);                      % evaluate covariance matrix
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
 
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
-L = chol(K/sn2+eye(n));               % Cholesky factor of covariance with noise
+L = chol(K/sn2+eye(n) + 0.0001*eye(n));               % Cholesky factor of covariance with noise
 alpha = solve_chol(L,y-m)/sn2;
 
 post.alpha = alpha;                            % return the posterior parameters

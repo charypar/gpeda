@@ -34,8 +34,8 @@ function [xopt varargout] = gpeda(options, eval, doe, sampler, rescale, restart,
 % run  - struct containing various statistics about the whole optimization run, including the dataset,
 %   individual populations and predictions
 
-lb = options.lowerBound;
-ub = options.upperBound;
+lb = options.lowerBound(:)';
+ub = options.upperBound(:)';
 n  = options.popSize;
 dim = length(lb);
 
@@ -45,7 +45,7 @@ run.attempt = 1;
 run.attempts = {};
 
 att = 1;
-run.attempts{att} = initAttempt(lb, ub);
+run.attempts{att} = initAttempt(lb, ub, options);
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
   att = run.attempt;
@@ -60,20 +60,23 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % train model
   disp(['Training model...']);
   M = modelTrain(M, ds.x, ds.y);
-  % M.hyp.lik = max(M.hyp.lik, log(0.0001)); % bound sn to prevent numerical errors
   run.attempts{att}.model = M;
+
+  M.hyp
 
   % sample new population
   disp(['Sampling population ' int2str(it) '...']);
   try
     cannot_sample = 0;
     [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
-  catch
-    disp(['Could not sample any points, giving up: ' lasterr]);
-    cannot_sample = 1;
+  catch err
+    disp(['Sample error ' err.identifier ': ' err.message]);
+    if strcmp(err.identifier, 'sampleGibbs:NarrowDataset') 
+      cannot_sample;
+    end
   end
   run.attempts{att}.populations{it} = pop;
-  run.attempts{att}.tolXDistRatios{it} = tolXDistRatio;
+  run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
 
   if nargin > 6 && isa(varargin{1}, 'function_handle')
     feval(varargin{1}, run)
@@ -116,11 +119,15 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
 
   if isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
+    disp('Rescaling conditions met, zooming in...');
     run.attempt = run.attempt + 1;
     att = run.attempt;
     
-    [nlb nub] = computeRescaleLimits(run.attempts{att-1});
-    run.attempts{att} = initRescaleAttempt(nlb, nub);
+    [nlb nub] = computeRescaleLimits(run.attempts{att-1}, dim);
+
+    % never exceed original bounds
+
+    run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
   end
 
   % if one of the restart conditions occurs
@@ -130,7 +137,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     att = run.attempt;
   
     % initialize new attempt
-    run.attempts{att} = initAttempt(lb, ub);
+    run.attempts{att} = initAttempt(lb, ub, options);
   end
 end
 
@@ -138,9 +145,11 @@ end
 
 besty = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.yms2(end, 1) )));
 bestx = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.x(end, :)' )))';
+scales = cell2mat(cellMap(run.attempts, @(attempt)( attempt.scale )));
+shifts = cell2mat(cellMap(run.attempts, @(attempt)( attempt.shift )));
 
 [yopt iopt] = min(besty)
-xopt = bestx(iopt, :); % TODO rescale output back to original space
+xopt = scales(iopt) * bestx(iopt, :) + shift(iopt);
 
 if nargout > 0
   varargout{1} = run;
@@ -148,7 +157,7 @@ end
 
 % Support functions
 
-function attempt = initAttempt(lb, ub)
+function attempt = initAttempt(lb, ub, options)
   dim = length(lb);
 
   if(isfield(options, 'model'))
@@ -171,6 +180,38 @@ function attempt = initAttempt(lb, ub)
   attempt.evaluations = length(attempt.dataset.y);
   
   attempt.populations = {};
+  attempt.tolXDistRatios = [1];
+
+  [ym, im] = min(attempt.dataset.y);
+  attempt.bests.x = attempt.dataset.x(im,:);    % a matrix with best input vectors rows 
+  attempt.bests.yms2 = [ym 0 0]; % a matrix with rows [y m s2] for the best individual in each generation
+end
+
+function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
+  dim = length(lb);
+
+  if(isfield(options, 'model'))
+    attempt.model = options.model;
+  else
+    attempt.model = modelInit(dim);
+  end
+
+  lastScale = lastAttempt.scale;
+  lastShift = lastAttempt.shift;
+
+  attempt.iterations = 1;
+  attempt.scale = (ub - lb)/2 * lastScale;
+  attempt.shift = (lb + ub)/2 * lastScale + lastShift;
+
+  % generate initial dataset
+  [x y] = filterDataset(lastAttempt.dataset, lb, ub);
+  attempt.dataset.x = scaleDataset(x, (ub - lb)/2, (lb + ub)/2)
+  attempt.dataset.y = y;
+
+  attempt.evaluations = 0;
+  
+  attempt.populations = {};
+  attempt.tolXDistRatios = [1];
 
   [ym, im] = min(attempt.dataset.y);
   attempt.bests.x = attempt.dataset.x(im,:);    % a matrix with best input vectors rows 
@@ -199,6 +240,55 @@ function [pop tol] = sample(samplers, M, D, n, thisAttempt, opts)
     pop = cellReduce(samplers, @(r, in) ( [r; in] ), []);
     tol = cellReduce(samplers, @(r, in) ( min(r, in) ), 1);
   end
+end
+
+function [lb ub] = computeRescaleLimits(attempt, dim)
+  x = attempt.dataset.x;
+  xopt = attempt.bests.x(end, :);
+
+  disp('Rescaling dataset');
+
+  % compute distances from the current optimum
+  dist = sqrt(sum((xopt - x).^2, 2));
+  [~, i] = sort(dist)
+
+  % take 10*D closest points
+  if(length(i) > 10*dim)
+    besti = i(1:10*dim);
+  else
+    warning('Rescaling did not discard any points');
+    besti = i;
+  end
+
+  x = x(i, :);
+
+  % take extremes
+  lb = min(x);
+  ub = max(x);
+
+  % extend the extremes
+  dif = ub - lb;
+  lb = lb - 0.05*dif;
+  ub = ub + 0.05*dif;
+  
+  lb = max([lb; -1]);
+  ub = min([ub; 1]);
+end
+
+function [x y] = filterDataset(ds, lob, upb)
+  % x = ds.x .* repmat(scale, size(ds.x, 1), 1) + repmat(shift, size(ds.x, 1), 1);
+  alb = all(ds.x > repmat(lob, size(ds.x, 1), 1), 2)
+  bub = all(ds.x < repmat(upb, size(ds.x, 1), 1), 2)
+
+  i = and(alb, bub);
+
+  x = ds.x(i, :);
+  y = ds.y(i, :);
+end
+
+function xout = scaleDataset(x, scale, shift)
+  l = size(x, 1);
+  xout = x .* repmat(scale, l, 1) + repmat(shift, l, 1);
 end
 
 end

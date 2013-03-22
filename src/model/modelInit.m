@@ -24,7 +24,7 @@ if nargin > 1
   hyp = varargin{1};
 else
   hyp.cov = log([0.1, 0.1]);
-  hyp.lik = log(0.001);
+  hyp.lik = log(0.0001);
 end
 
 if nargin < 3

@@ -24,7 +24,8 @@ targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 % the minimum distance of X's in the dataset must be > minTolX
 minDist = sqrt(min(min( sq_dist(attempt.dataset.x') + eye(length(attempt.dataset.x)) )));
 if (minDist < minTolX)
-  exception = MException('sampleGibbs:NarrowDataset', ['The distances in the given dataset are below minTolX = ' num2str(minTolX)]);
+  exception = MException('sampleGibbs:NarrowDataset', ...
+              ['The distances in the given dataset (' num2str(minDist) ') are below minTolX = ' num2str(minTolX)]);
   tolXDistRatio = 0;
   throw(exception);
 end
