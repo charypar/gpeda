@@ -2,7 +2,7 @@ clear; close all; clc;
 
 opts.popSize = 8;
 % % 1D
-opts.lowerBound = -5;
+opts.lowerBound = -3;
 opts.upperBound =  5;
 
 % opts.eval.handle = @(x) ( sum(x.^2, 2) );

@@ -77,7 +77,7 @@ function [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX
 % spar.target   target value for computing probability of improvement
 
 % Parameters
-thin = dim * 20;        % the number of discarted samples between actual draws
+thin = dim * 5;        % the number of discarted samples between actual draws
 gridSize = 400;         % the number of samples of POI from which the 
                         % marginal's inverse CDF is estimated
 nSamplePOITries = 5;    % how many times the POI is sampled, each time
@@ -218,10 +218,10 @@ end
 
 if (nSampled < (nsamples));
   s((nSampled+1):end,:) = [];
-  exception = MException('sampleGibbs:NarrowProbability', ...
+  warning('sampleGibbs:NarrowProbability', ...
     ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples) ...
      ') draws can be sampled far enough from the dataset.']);
-  throw(exception);
+  errCode = 2;
 end
 
 end % subfunction gibbsSampler()

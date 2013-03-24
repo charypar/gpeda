@@ -89,10 +89,13 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % evaluate and add to dataset
   disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
 
-  x = pop .* repmat(scale, size(pop, 1), 1) + repmat(shift, size(pop, 1), 1);
   [m s2] = modelPredict(M, pop);
 
+  scale
+  shift
+  x = transform(pop, scale, shift);
   y = feval(eval, x, m, s2, options.eval);
+
   run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(y);
 
   % store the best so far
@@ -125,9 +128,9 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     
     [nlb nub] = computeRescaleLimits(run.attempts{att-1}, dim);
 
-    % never exceed original bounds
-
     run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
+    disp('Got rescale attempt');
+    run.attempts{att}
   end
 
   % if one of the restart conditions occurs
@@ -158,25 +161,29 @@ end
 % Support functions
 
 function attempt = initAttempt(lb, ub, options)
-  dim = length(lb);
+  D = length(lb);
 
   if(isfield(options, 'model'))
     attempt.model = options.model;
   else
-    attempt.model = modelInit(dim);
+    attempt.model = modelInit(D);
   end
 
+  % FIXME this assumes covSEiso!!!
+  % attempt.model.hyp.cov(0) = attempt.model.hyp.cov(0) * (ub - lb) / 2;
+
   attempt.iterations = 1;
-  attempt.scale = (ub - lb)/2;
-  attempt.shift = (lb + ub)/2;
+  attempt.scale = (ub - lb) / (1 + 1);
+  % attempt.shift = (1 - 1)/2 - (lb + ub)/2;
+  attempt.shift = -1 - (lb / attempt.scale);
 
   % generate initial dataset
-  attempt.dataset.x = feval(doe, dim, options.doe);
+  attempt.dataset.x = feval(doe, D, options.doe);
 
-  x = attempt.dataset.x;
-  x = x .* repmat(attempt.scale, size(x, 1), 1) + repmat(attempt.shift, size(x, 1), 1);
+  dsx = attempt.dataset.x;
+  dsx = transform(dsx, attempt.scale, attempt.shift);
   
-  attempt.dataset.y = feval(eval, x, [], [], options.eval);
+  attempt.dataset.y = feval(eval, dsx, [], [], options.eval);
   attempt.evaluations = length(attempt.dataset.y);
   
   attempt.populations = {};
@@ -188,25 +195,29 @@ function attempt = initAttempt(lb, ub, options)
 end
 
 function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
-  dim = length(lb);
+  D = length(lb);
 
   if(isfield(options, 'model'))
     attempt.model = options.model;
   else
-    attempt.model = modelInit(dim);
+    attempt.model = modelInit(D);
   end
 
   lastScale = lastAttempt.scale;
   lastShift = lastAttempt.shift;
 
   attempt.iterations = 1;
-  attempt.scale = (ub - lb)/2 * lastScale;
-  attempt.shift = (lb + ub)/2 * lastScale + lastShift;
+  oub = transform(ub, lastScale, lastShift);
+  olb = transform(lb, lastScale, lastShift);
+
+  attempt.scale = (oub - olb) / 2;
+  %attempt.shift = -(olb + oub) / 2;
+  attempt.shift = -1 - (olb / attempt.scale);
 
   % generate initial dataset
-  [x y] = filterDataset(lastAttempt.dataset, lb, ub);
-  attempt.dataset.x = scaleDataset(x, (ub - lb)/2, (lb + ub)/2)
-  attempt.dataset.y = y;
+  [fx fy] = filterDataset(lastAttempt.dataset, lb, ub);
+  attempt.dataset.x = transform(fx, 2/(ub - lb), lb - (ub - lb) / 2);
+  attempt.dataset.y = fy;
 
   attempt.evaluations = 0;
   
@@ -222,8 +233,8 @@ function tf = evalconds(conds, run, opts)
   if isa(conds, 'function_handle')
     tf = feval(conds, run, opts);
   else
-    for i = 1:length(conds)
-      conds{i} = feval(conds{i}, run, opts{i});
+    for k = 1:length(conds)
+      conds{k} = feval(conds{k}, run, opts{k});
     end
     tf = cellReduce(conds, @(r, in) ( r || in ), 0);
   end
@@ -233,9 +244,9 @@ function [pop tol] = sample(samplers, M, D, n, thisAttempt, opts)
   if isa(samplers, 'function_handle')
     [pop tol] = feval(samplers, M, D, n, thisAttempt, opts);
   else
-    for i = 1:length(samplers)
-      [p t] = feval(samplers{i}, M, D, n, thisAttempt, opts{i});
-      samplers{i} = [p t];
+    for k = 1:length(samplers)
+      [p t] = feval(samplers{k}, M, D, n, thisAttempt, opts{k});
+      samplers{k} = [p t];
     end
     pop = cellReduce(samplers, @(r, in) ( [r; in] ), []);
     tol = cellReduce(samplers, @(r, in) ( min(r, in) ), 1);
@@ -243,28 +254,28 @@ function [pop tol] = sample(samplers, M, D, n, thisAttempt, opts)
 end
 
 function [lb ub] = computeRescaleLimits(attempt, dim)
-  x = attempt.dataset.x;
-  xopt = attempt.bests.x(end, :);
+  dsx = attempt.dataset.x;
+  dsxopt = attempt.bests.x(end, :);
 
   disp('Rescaling dataset');
 
   % compute distances from the current optimum
-  dist = sqrt(sum((xopt - x).^2, 2));
-  [~, i] = sort(dist)
+  dist = sqrt(sum((dsxopt - dsx).^2, 2));
+  [~, ind] = sort(dist);
 
   % take 10*D closest points
-  if(length(i) > 10*dim)
-    besti = i(1:10*dim);
+  if(length(ind) > 10*dim)
+    besti = ind(1:10*dim);
   else
     warning('Rescaling did not discard any points');
-    besti = i;
+    besti = ind;
   end
 
-  x = x(i, :);
+  dsx = dsx(besti, :);
 
   % take extremes
-  lb = min(x);
-  ub = max(x);
+  lb = min(dsx);
+  ub = max(dsx);
 
   % extend the extremes
   dif = ub - lb;
@@ -273,22 +284,18 @@ function [lb ub] = computeRescaleLimits(attempt, dim)
   
   lb = max([lb; -1]);
   ub = min([ub; 1]);
+
+  disp(['New bounds: ' num2str(lb) ' ' num2str(ub)]);
 end
 
 function [x y] = filterDataset(ds, lob, upb)
-  % x = ds.x .* repmat(scale, size(ds.x, 1), 1) + repmat(shift, size(ds.x, 1), 1);
-  alb = all(ds.x > repmat(lob, size(ds.x, 1), 1), 2)
-  bub = all(ds.x < repmat(upb, size(ds.x, 1), 1), 2)
+  alb = all(ds.x > repmat(lob, size(ds.x, 1), 1), 2);
+  bub = all(ds.x < repmat(upb, size(ds.x, 1), 1), 2);
 
-  i = and(alb, bub);
+  ind = and(alb, bub);
 
-  x = ds.x(i, :);
-  y = ds.y(i, :);
-end
-
-function xout = scaleDataset(x, scale, shift)
-  l = size(x, 1);
-  xout = x .* repmat(scale, l, 1) + repmat(shift, l, 1);
+  x = ds.x(ind, :);
+  y = ds.y(ind, :);
 end
 
 end

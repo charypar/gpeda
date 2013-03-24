@@ -23,7 +23,7 @@ function M = modelInit(dim, varargin)
 if nargin > 1
   hyp = varargin{1};
 else
-  hyp.cov = log([0.1, 0.1]);
+  hyp.cov = log([0.05, 0.1]);
   hyp.lik = log(0.0001);
 end
 
