@@ -62,8 +62,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   M = modelTrain(M, ds.x, ds.y);
   run.attempts{att}.model = M;
 
-  M.hyp
-
   % sample new population
   disp(['Sampling population ' int2str(it) '...']);
   try
@@ -169,13 +167,9 @@ function attempt = initAttempt(lb, ub, options)
     attempt.model = modelInit(D);
   end
 
-  % FIXME this assumes covSEiso!!!
-  % attempt.model.hyp.cov(0) = attempt.model.hyp.cov(0) * (ub - lb) / 2;
-
   attempt.iterations = 1;
   attempt.scale = (ub - lb) / (1 + 1);
-  % attempt.shift = (1 - 1)/2 - (lb + ub)/2;
-  attempt.shift = -1 - (lb / attempt.scale);
+  attempt.shift = -1 - (lb ./ attempt.scale);
 
   % generate initial dataset
   attempt.dataset.x = feval(doe, D, options.doe);
