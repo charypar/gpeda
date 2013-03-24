@@ -152,7 +152,7 @@ scales = cell2mat(cellMap(run.attempts, @(attempt)( attempt.scale )));
 shifts = cell2mat(cellMap(run.attempts, @(attempt)( attempt.shift )));
 
 [yopt iopt] = min(besty)
-xopt = scales(iopt) * bestx(iopt, :) + shift(iopt);
+xopt = transform(bestx(iopt,:), scales(iopt), shifts(iopt));
 
 if nargout > 0
   varargout{1} = run;
@@ -216,7 +216,9 @@ function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
 
   % generate initial dataset
   [fx fy] = filterDataset(lastAttempt.dataset, lb, ub);
-  attempt.dataset.x = transform(fx, 2/(ub - lb), lb - (ub - lb) / 2);
+  scaleDataset = (ub - lb) / (1 + 1);
+  shiftDataset = -1 - (lb / scaleDataset);
+  attempt.dataset.x = inv_transform(fx, scaleDataset, shiftDataset);
   attempt.dataset.y = fy;
 
   attempt.evaluations = 0;
