@@ -44,7 +44,8 @@ end
 
 if nargin < 5
   lik = @likGauss;
-  inf = @infExact;
+  %inf = @infExact;
+  inf = @infLaplace;
 
   if ~isfield(hyp, 'inf')
     hyp.inf = log(0.001);

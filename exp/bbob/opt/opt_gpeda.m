@@ -11,7 +11,7 @@ opts.upperBound = ones(1, DIM) * 5;
 opts.doe.n = 20*DIM; % TODO test how to set this
 opts.doe.minTolX = 0.002;
 
-opts.sampler.minTolX = 0.002
+opts.sampler.minTolX = 0.002;
 
 % fgeneric takes D-by-n matrices, we work with n-by-D;
 opts.eval.handle = @(x)( feval(FUN, x')' );
@@ -33,8 +33,5 @@ opts.stop = {
   struct('target', ftarget)
 };
 
-opts
-ftarget
-
 xbest = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, ...
-              rescaleConds, restartConds, stopConds);
+              rescaleConds, restartConds, stopConds, @gpedaStep2d);
