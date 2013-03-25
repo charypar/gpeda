@@ -47,6 +47,8 @@ run.attempts = {};
 att = 1;
 run.attempts{att} = initAttempt(lb, ub, options);
 
+disp(sprintf('\n ==== Starting new optimization run ==== \n'));
+
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
   narrowDatasetRescale = 0;
   att = run.attempt;
@@ -89,8 +91,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   [m s2] = modelPredict(M, pop);
 
-  scale
-  shift
   x = transform(pop, scale, shift);
   y = feval(eval, x, m, s2, options.eval);
 
@@ -207,12 +207,12 @@ function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
 
   attempt.scale = (oub - olb) / 2;
   %attempt.shift = -(olb + oub) / 2;
-  attempt.shift = -1 - (olb / attempt.scale);
+  attempt.shift = -1 - (olb ./ attempt.scale);
 
   % generate initial dataset
   [fx fy] = filterDataset(lastAttempt.dataset, lb, ub);
   scaleDataset = (ub - lb) / (1 + 1);
-  shiftDataset = -1 - (lb / scaleDataset);
+  shiftDataset = -1 - (lb ./ scaleDataset);
   attempt.dataset.x = inv_transform(fx, scaleDataset, shiftDataset);
   attempt.dataset.y = fy;
 
@@ -252,7 +252,7 @@ end
 
 function [lb ub] = computeRescaleLimits(attempt, dim)
   dsx = attempt.dataset.x;
-  dsxopt = attempt.bests.x(end, :);
+  dsxopt = repmat(attempt.bests.x(end, :), size(dsx, 1), 1);
 
   disp('Rescaling dataset');
 
@@ -279,8 +279,8 @@ function [lb ub] = computeRescaleLimits(attempt, dim)
   lb = lb - 0.05*dif;
   ub = ub + 0.05*dif;
   
-  lb = max([lb; -1]);
-  ub = min([ub; 1]);
+  lb = max([lb; -1*ones(1, dim)]);
+  ub = min([ub; 1*ones(1, dim)]);
 
   disp(['New bounds: ' num2str(lb) ' ' num2str(ub)]);
 end
