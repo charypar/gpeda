@@ -49,15 +49,15 @@ while (errCode ~= 0 && i <= length(thresholds))
   % debugArgs = {};
   % /DEBUG
   
-  options = optimset('MaxFunEvals', min(1e6*dim), ...
+  fminoptions = optimset('MaxFunEvals', min(1e6*dim), ...
     'MaxIter', 1000*dim, ...
     'Tolfun', 1e-7, ...
     'TolX', 1e-7, ...
     'Display', 'off');
-  [maxPOI, ~, exitflag] = fminsearch(@(x) -density(x), bestX);
-  fprintf('sampleGibbs(): Maximal POI found at (%x) with exitflag %d.\n', maxPOI, exitflag);
+  [maxPOIfmins, ~, exitflag] = fminsearch(@(x) -density(x), bestX, fminoptions);
+  fprintf('sampleGibbs(): Maximal POI found at (%s) with exitflag %d.\n', num2str(maxPOIfmins), exitflag);
 
-  [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, maxPOI, attempt.dataset.x, spar); % , debugArgs);
+  [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, maxPOIfmins, attempt.dataset.x, spar); % , debugArgs);
 
   switch (errCode)
   case 1

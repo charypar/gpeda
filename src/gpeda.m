@@ -48,7 +48,6 @@ att = 1;
 run.attempts{att} = initAttempt(lb, ub, options);
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
-  narrowDatasetRescale = 0;
   att = run.attempt;
   it = run.attempts{att}.iterations;
   ds = run.attempts{att}.dataset;
@@ -65,6 +64,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   % sample new population
   disp(['Sampling population ' int2str(it) '...']);
+  narrowProbabilityRescale = 0;
   try
     cannotSample = 0;
     [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
@@ -74,7 +74,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
       cannotSample = 1;
     end
     if strcmp(err.identifier, 'sampleGibbs:NarrowProbability')
-      narrowDatasetRescale = 1;
+      narrowProbabilityRescale = 1;
     end
   end
   run.attempts{att}.populations{it} = pop;
@@ -119,7 +119,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % and we've completed an iteration
   run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
 
-  if narrowDatasetRescale ...
+  if narrowProbabilityRescale ...
      || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
     disp('Rescaling conditions met, zooming in...');
     run.attempt = run.attempt + 1;
