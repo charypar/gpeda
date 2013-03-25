@@ -27,7 +27,7 @@ xx_o = reshape(xy_original(:, 1), n, n);
 yy_o = reshape(xy_original(:, 2), n, n); 
 
 [m s2] = modelPredict(M, xy_column);
-poi = modelGetPOI(M, xy_column, run.options.sampler.target);
+poi = modelGetPOI(M, xy_column, run.options.stop{2}.target);
 
 att = run.attempt;
 it = run.attempts{att}.iterations;
