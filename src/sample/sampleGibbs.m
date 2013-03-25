@@ -163,7 +163,7 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
       if (nPoints == 0)
         % warning('sampleGibbs(): There is no probability of improvement. Giving up.');
         errCode = 1;
-        s(nSamples:end,:) = [];
+        s(nSampled:end,:) = [];
         return
       end
       if (nPoints == 1)
