@@ -9,10 +9,11 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('../vendor/bbob');  % should point to fgeneric.m etc.
+bbobpath = '../vendor/bbob';    % should point to fgeneric.m etc.
 datapath = 'output/exp_gpeda';  % different folder for each experiment
   pathstr = fileparts(mfilename('fullpath'));
   datapath = [pathstr filesep datapath];
+  addpath([pathstr filesep bbobpath]);
 % opt.inputFormat = 'row';
 
 opt.algName = 'GPEDA v 0.1';
