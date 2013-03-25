@@ -48,6 +48,7 @@ att = 1;
 run.attempts{att} = initAttempt(lb, ub, options);
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
+  narrowDatasetRescale = 0;
   att = run.attempt;
   it = run.attempts{att}.iterations;
   ds = run.attempts{att}.dataset;
@@ -65,12 +66,15 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % sample new population
   disp(['Sampling population ' int2str(it) '...']);
   try
-    cannot_sample = 0;
+    cannotSample = 0;
     [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
   catch err
     disp(['Sample error ' err.identifier ': ' err.message]);
-    if strcmp(err.identifier, 'sampleGibbs:NarrowDataset') 
-      cannot_sample;
+    if strcmp(err.identifier, 'sampleGibbs:NarrowDataset')
+      cannotSample = 1;
+    end
+    if strcmp(err.identifier, 'sampleGibbs:NarrowProbability')
+      narrowDatasetRescale = 1;
     end
   end
   run.attempts{att}.populations{it} = pop;
@@ -78,10 +82,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   if nargin > 6 && isa(varargin{1}, 'function_handle')
     feval(varargin{1}, run)
-  end
-
-  if cannot_sample
-    break; % FIXME what do we do now?? If there is no POI for the first time, rescale
   end
 
   % evaluate and add to dataset
@@ -119,7 +119,8 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % and we've completed an iteration
   run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
 
-  if isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
+  if narrowDatasetRescale ...
+     || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
     disp('Rescaling conditions met, zooming in...');
     run.attempt = run.attempt + 1;
     att = run.attempt;
@@ -132,7 +133,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   end
 
   % if one of the restart conditions occurs
-  if isfield(options, 'restart') && evalconds(restart, run, options.restart) 
+  if cannotSample || (isfield(options, 'restart') && evalconds(restart, run, options.restart))
     disp(['Restart conditions met, starting over...']);
     run.attempt = run.attempt + 1;
     att = run.attempt;

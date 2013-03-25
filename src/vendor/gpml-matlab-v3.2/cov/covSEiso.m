@@ -23,6 +23,8 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 
 ell = exp(hyp(1));                                 % characteristic length scale
 sf2 = exp(2*hyp(2));                                           % signal variance
+% sf2 = 2*hyp(2);                                           % signal variance
+% TODO: -- this variants are to be tested -- do they perform better?!
 
 % precompute squared distances
 if dg                                                               % vector kxx
@@ -37,11 +39,14 @@ end
 
 if nargin<4                                                        % covariances
   K = sf2*exp(-K/2);
+  % K = exp(sf2-K/2);
 else                                                               % derivatives
   if i==1
     K = sf2*exp(-K/2).*K;
+    % K = exp(sf2-K/2).*K;
   elseif i==2
     K = 2*sf2*exp(-K/2);
+    % K = 2*exp(sf2-K/2);
   else
     error('Unknown hyperparameter')
   end
