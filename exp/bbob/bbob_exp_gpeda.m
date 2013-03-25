@@ -10,13 +10,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 addpath('../vendor/bbob');  % should point to fgeneric.m etc.
-datapath = 'output/exp_fminsearch';  % different folder for each experiment
+datapath = 'output/exp_gpeda';  % different folder for each experiment
   pathstr = fileparts(mfilename('fullpath'));
   datapath = [pathstr filesep datapath];
 % opt.inputFormat = 'row';
 
 opt.algName = 'GPEDA v 0.1';
-opt.comments = 'GPEDA, Gaussian-Processes EDA, first experiment at all';
+opt.comments = 'GPEDA, Gaussian-Processes EDA, first experiment ever';
 
 maxfunevals = '100 * dim'; % 10*dim is a short test-experiment taking a few minutes 
                           % INCREMENT maxfunevals successively to larger value(s)
