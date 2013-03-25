@@ -181,6 +181,10 @@ function attempt = initAttempt(lb, ub, options)
   attempt.dataset.y = feval(eval, dsx, [], [], options.eval);
   attempt.evaluations = length(attempt.dataset.y);
   
+  % FIXME assumes mean function is a constant
+  ymean = mean(attempt.dataset.y);
+  attempt.model.hyp.mean = ymean;
+
   attempt.populations = {};
   attempt.tolXDistRatios = [1];
 
@@ -215,6 +219,10 @@ function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
   shiftDataset = -1 - (lb ./ scaleDataset);
   attempt.dataset.x = inv_transform(fx, scaleDataset, shiftDataset);
   attempt.dataset.y = fy;
+
+  % FIXME assumes mean function is a constant
+  ymean = mean(fy);
+  attempt.model.hyp.mean = ymean;
 
   attempt.evaluations = 0;
   
