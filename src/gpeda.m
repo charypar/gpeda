@@ -80,7 +80,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   run.attempts{att}.populations{it} = pop;
   run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
 
-  if nargin > 6 && isa(varargin{1}, 'function_handle')
+  if nargin > 7 && isa(varargin{1}, 'function_handle')
     feval(varargin{1}, run)
   end
 
