@@ -10,7 +10,7 @@ rand('state', sum(100 * t0));
 for dim = dimensions            % small dimensions first, for CPU reasons
   % for ifun = benchmarks('FunctionIndices')  % or benchmarksnoisy(...)
   for ifun = functions          % or benchmarksnoisy(...)
-    for iinstance = [1:5, 31:40]  % 15 function instances
+    for iinstance = instances   % 15 function instances
       fgeneric('initialize', ifun, iinstance, datapath, opt); 
 
       % independent restarts until maxfunevals or ftarget is reached

@@ -33,5 +33,7 @@ opts.stop = {
   struct('target', ftarget)
 };
 
+gpedaStep2d_ftarget = @(run) gpedaStep2d(run, fgeneric('ftarget'));
+
 xbest = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, ...
-              rescaleConds, restartConds, stopConds, @gpedaStep2d);
+              rescaleConds, restartConds, stopConds, gpedaStep2d_ftarget);

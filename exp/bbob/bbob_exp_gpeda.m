@@ -26,8 +26,10 @@ maxrestarts = 1e4;        % SET to zero for an entirely deterministic algorithm
 
 dimensions  = [2];    % which dimensions to optimize, subset of [2 3 5 10 20 40];
 
-functions   = [1 2 3];    % function ID's to optimize
+functions   = [2 3];    % function ID's to optimize
 % functions   = benchmarks('FunctionIndices');
+
+instances = [1:3];      % [1:5, 31:40]
 
 opt_function = @opt_gpeda; % function being optimized -- BBOB wrap-around with header
                                 % xbest = function( fun, dim, ftarget, maxfunevals )

@@ -18,8 +18,9 @@ currBestY = attempt.bests.yms2(end,1);
 currWorstY = min(attempt.dataset.y);
 tolXDistRatio = 0;
 
-thresholds = [0 0.0001 0.001 (0.01 * (1:3:13)) 0.15 0.20 0.25 ...
-  0.30 0.50 1.0 2.0 3.0];
+% thresholds = [0 0.0001 0.001 (0.01 * (1:3:13)) 0.15 0.20 0.25 ...
+%   0.30 0.50 1.0 2.0 3.0];
+thresholds = [0 0.001 0.30 1.0 3.0];
 thresholds = flipdim(thresholds, 2);
 targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 
@@ -49,15 +50,25 @@ while (errCode ~= 0 && i <= length(thresholds))
   % debugArgs = {};
   % /DEBUG
   
-  fminoptions = optimset('MaxFunEvals', min(1e6*dim), ...
-    'MaxIter', 1000*dim, ...
-    'Tolfun', 1e-7, ...
-    'TolX', 1e-7, ...
-    'Display', 'off');
-  [maxPOIfmins, ~, exitflag] = fminsearch(@(x) -density(x), bestX, fminoptions);
-  fprintf('sampleGibbs(): Maximal POI found at (%s) with exitflag %d.\n', num2str(maxPOIfmins), exitflag);
+  % % try use fminsearch() to find a place with highest POI
+  % % -- does not work well :(
+  % fminoptions = optimset('MaxFunEvals', min(1e6*dim), ...
+  %   'MaxIter', 1000*dim, ...
+  %   'Tolfun', 1e-7, ...
+  %   'TolX', 1e-7, ...
+  %   'Display', 'off');
+  % [maxPOIfmins, ~, exitflag] = fminsearch(@(x) -density(x), bestX, fminoptions);
+  % fprintf('sampleGibbs(): Maximal POI found at (%s) with exitflag %d.\n', num2str(maxPOIfmins), exitflag);
+  % startX = maxPOIfmins;
 
-  [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, maxPOIfmins, attempt.dataset.x, spar); % , debugArgs);
+  % evaluate POI on a grid and access point with the highest POI
+  % TODO: try running sampler for each such a region, not just maxPOI
+  xyz = gridnd(-1*ones(1,dim), ones(1,dim), 101);
+  xyzPOI = density(xyz);
+  [maxXyzPOI ind] = max(xyzPOI);
+  startX = xyz(ind,:);
+
+  [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x, spar); % , debugArgs);
 
   switch (errCode)
   case 1
@@ -163,7 +174,7 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
       if (nPoints == 0)
         % warning('sampleGibbs(): There is no probability of improvement. Giving up.');
         errCode = 1;
-        s(nSampled:end,:) = [];
+        s((nSampled+1):end,:) = [];
         return
       end
       if (nPoints == 1)
@@ -238,8 +249,10 @@ end
 
 if (nSampled < (nsamples));
   s((nSampled+1):end,:) = [];
-  warning('sampleGibbs:NarrowProbability', ...
-    ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples) ...
+  % warning('sampleGibbs:NarrowProbability', ...
+  %   ['Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples) ...
+  %    ') draws can be sampled far enough from the dataset.']);
+  disp(['sampleGibbs(): Not enough (only ' num2str(nSampled) ' out of ' num2str(nsamples) ...
      ') draws can be sampled far enough from the dataset.']);
   errCode = 2;
   return;

@@ -46,6 +46,7 @@ run.attempts = {};
 
 att = 1;
 run.attempts{att} = initAttempt(lb, ub, options);
+pop = [];
 
 disp(sprintf('\n ==== Starting new optimization run ==== \n'));
 
@@ -71,14 +72,25 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     cannotSample = 0;
     [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
   catch err
-    disp(['Sample error ' err.identifier ': ' err.message]);
+    disp(['Sample error: ' err.identifier]);
+    disp(getReport(err));
     if strcmp(err.identifier, 'sampleGibbs:NarrowDataset')
       cannotSample = 1;
+      fprintf('  NarrowDataset: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
     end
     if strcmp(err.identifier, 'sampleGibbs:NarrowProbability')
       narrowProbabilityRescale = 1;
+      fprintf('  NarrowProbability: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+    end
+    if strcmp(err.identifier, 'sampleGibbs:NoProbability')
+      cannotSample = 1;
+      fprintf('  NoProbability. Restart.\n');
     end
   end
+
+ % if there are at least some individuals returned from sampler(s)
+ if (exist('pop') && ~isempty(pop))
+
   run.attempts{att}.populations{it} = pop;
   run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
 
@@ -119,18 +131,8 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % and we've completed an iteration
   run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
 
-  if narrowProbabilityRescale ...
-     || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
-    disp('Rescaling conditions met, zooming in...');
-    run.attempt = run.attempt + 1;
-    att = run.attempt;
-    
-    [nlb nub] = computeRescaleLimits(run.attempts{att-1}, dim);
-
-    run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
-    disp('Got rescale attempt');
-    run.attempts{att}
-  end
+ % end if -- if (exist(pop) && ~isempty(pop))
+ end
 
   % if one of the restart conditions occurs
   if cannotSample || (isfield(options, 'restart') && evalconds(restart, run, options.restart))
@@ -140,7 +142,21 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   
     % initialize new attempt
     run.attempts{att} = initAttempt(lb, ub, options);
+  else
+    if narrowProbabilityRescale ...
+      || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
+      disp('Rescaling conditions met, zooming in...');
+      run.attempt = run.attempt + 1;
+      att = run.attempt;
+      
+      [nlb nub] = computeRescaleLimits(run.attempts{att-1}, dim);
+
+      run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
+      disp('Got rescale attempt');
+      run.attempts{att}
+    end
   end
+
 end
 
 % return the best overall

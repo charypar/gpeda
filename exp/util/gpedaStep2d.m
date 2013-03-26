@@ -1,4 +1,4 @@
-function gpedaStep2d(run)
+function gpedaStep2d(run, varargin)
 
 att = run.attempt;
 it = run.attempts{att}.iterations;
@@ -16,6 +16,10 @@ lb = run.options.lowerBound;
 ub = run.options.upperBound;
 
 assert(max(size(lb)) == 2, 'gpedaStep2d(): Input dimensions is not 2D.');
+
+if (nargin > 1)
+  disp(['Best so-far: ' num2str(best.yms2(end,1)) '   delta = ' num2str(best.yms2(end,1)-varargin{1})]);
+end
 
 gridSize = 101;
 [xy_column xx yy] = grid2d([-1 -1], [1 1], gridSize);
