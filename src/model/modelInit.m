@@ -23,7 +23,8 @@ function M = modelInit(dim, varargin)
 if nargin > 1
   hyp = varargin{1};
 else
-  hyp.cov = log([0.05, 0.1]);
+  % hyp.cov = log([0.05, 0.1]);
+  hyp.cov = log([0.5, 0.1]);
   hyp.lik = log(0.0001);
 end
 
@@ -44,8 +45,8 @@ end
 
 if nargin < 5
   lik = @likGauss;
-  %inf = @infExact;
-  inf = @infLaplace;
+  inf = @infExact;
+  % inf = @infLaplace;
 
   if ~isfield(hyp, 'inf')
     hyp.inf = log(0.001);
