@@ -33,7 +33,7 @@ opts.doe.n = 20; % initial dataset
 opts.sampler.target = 0.001; % testing on x^2, we know the target
 opts.stop.evaluations = 100;
 
-[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleMCPOI, [], @stopNEvals);
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], @stopNEvals);
 ```
 
 First we set some general options: the number of individuals in each generation `popSize` and bounds of the
@@ -124,7 +124,7 @@ fastest method is the Gibbs sampler (`sampleGibbs`). You'd get a new population 
 nsamp = 20;
 opts.target = 0;
 
-population = sampleMCPOI(M, -5, 5, nsamp, opts);
+population = sampleGibbs(M, -5, 5, nsamp, opts);
 ```
 
 First set the number of samples and the target function value desired (used for PoI estimate), then call the function
