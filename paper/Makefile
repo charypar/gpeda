@@ -1,8 +1,8 @@
 RM	 = /bin/rm -f
 OUT = gpedaBBOBarticle.pdf
 SRC = gpedaBBOBarticle.tex
-# BIB = gpedaBBOB.bib
-TMP = gpedaBBOBarticle.aux gpedaBBOBarticle.log
+BIB = gpedaBBOBarticle
+TMP = gpedaBBOBarticle.aux gpedaBBOBarticle.log gpedaBBOBarticle.bbl gpedaBBOBarticle.blg
 
 all: display
 process:

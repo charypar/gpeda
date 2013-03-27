@@ -84,10 +84,7 @@
 \widowpenalty = 10000
 % --- End of Author Metadata ---
 
-\title{Black-Box Optimization Benchmarking Template for Noiseless Function
-Testbed
-% \titlenote{If needed}
-}
+\title{Benchmarking XYZ on the Noiseless BBOB-2013 Function Testbed}
 \subtitle{Draft version
 \titlenote{Submission deadline: March 28th.}}
 %Camera-ready paper due April 17th.}}
@@ -134,7 +131,7 @@ Testbed
 %
 % 1st. author
 \alignauthor
-Lukáš Bajer \\
+Lukas Bajer \\
        \affaddr{Institute of Computer Science}\\
        \affaddr{Academy of Sciences of the Czech Republic}\\
        \affaddr{Pod Vodarenskou vezi 2}\\
@@ -207,13 +204,33 @@ unconstrained optimization]
 
 \section{Introduction}
 
-% introduction to EDA
-% Model building
-% Gaussian Processes
-% Probability of improvement
-% Replacing Normal distribution with a Gausssian process
+When optimizing expensive objective functions with evolutionary algorithms, the cost of the function 
+evaluation dominates the cost of the whole optimization. Our goal is therefore to limit the amount of 
+evaluations and at the same time exploit the knowledge of all the previous evaluations. One way to 
+achieve this is to build a model of the objective function based on the evaluated candidate solutions 
+and produce new candidate solutions based on this model. 
 
-\section{Gaussian Processes}
+Estimation of Distribution Algorithms (EDA) present one such approach that gained popularity in the recent
+decades. An EDA evolves a population of candidate solutions in iterations, each of which starts with solution
+evaluation and selection of the promising ones. A probabilistic model of the better solutions is then built
+and new solutions are sampled from it. A comprehensive overview of EDAs and related methods can be found in
+[Pelikan 2006].
+
+Another such approach is using Gaussian Process (GP) models for optimization fitting a GP model to the data
+and selecting next candidate solution based on the mean and variance of the predictive distribution given 
+by the GP. The optimization works by selecting such a point, adding it to the dataset and fitting a new
+model on the resulting data. The candidate selection criteria are responsible for balancing exploration and
+exploitation of the input space. A number of criteria were examined by Jones et al. [Jones 01], of which the Probability of Improvement (PoI) is of interest for this work.
+
+We propose a novel optimization method - XYZ - based on a combination of the GP optimization and EDAs. One can either
+view the change as replacing the distribution model in EDA with a probability of improvement of a GP model 
+fitted to all known data, or, from the latter point of view, as, instead of maximizing the PoI to find a single
+candidate solution, sampling a set of candidate solution proportionally to the PoI. 
+
+In this paper, XYZ is benchmarekd on X functions and number of evaluations to reach a given target function value is
+presented.
+
+\section{Gaussian Process regression}
 
 % Stochastic model, generalization of gaussian distribution
 % a collection of random variables, any finite number of which have a joint Gaussian distribution. [Rasmussen]
@@ -223,10 +240,11 @@ unconstrained optimization]
 % probabilty of improvement definition (Jones)
 % sampled in the optimization
 
-\section{Algorithm Presentation}
+\section{The XYZ}
 
 % Similar idea to [Jones 98]. Instead of maximizing the PoI samples the new population using it
 % working in [-1, 1]^D allows for rescaling when region of the optimum is found
+% performs in stages - train, sample, train, sample, rescale, ..., local search
 % algorithm steps/pseudocode
 % sampling description (Gibbs method)
 
@@ -238,6 +256,8 @@ unconstrained optimization]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Results of \algname\ from experiments according to \cite{hansen2012exp} on the benchmark
