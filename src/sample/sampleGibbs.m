@@ -73,6 +73,15 @@ while (errCode ~= 0 && i <= length(thresholds))
   % fprintf('sampleGibbs(): Maximal POI found at (%s) with exitflag %d.\n', num2str(maxPOIfmins), exitflag);
   % startX = maxPOIfmins;
 
+  % this is GADS Toolbox, which we dont have license for :(
+  % max_density = @(xx) -density(xx);
+  % got_opts = optimset('Algorithm', 'interior-point');
+  % problem = createOptimProblem('fmincon', 'objective',...
+  %   max_density,'x0',attempt.bests.x(end,:),...
+  %   'lb',-1*ones(1,dim),'ub',ones(1,dim),'options',got_opts);
+  % gs = GlobalSearch;
+  % [startX,maxPOIY] = run(gs, problem);
+
   % ycond = @(y) (y>0);
   % maxPOIX = [];
   % [maxPOIX, maxPOIY] = getMax(density, dim, ycond);
@@ -93,6 +102,7 @@ while (errCode ~= 0 && i <= length(thresholds))
     end
   else
     errCode = 1;
+    disp('No points with non-zero POI to start at.');
   end
   % TODO: start the sampler in multiple local maxima of POI, not just one of them
   %       draft of such code is below

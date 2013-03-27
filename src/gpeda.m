@@ -74,25 +74,13 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   if (nErrors > maxTrainErrors) 
     disp('Too many errors while training model. Find and evaluate minimum of the GP model.');
     if (~isfield(run.attempts{att}.model, 'dataset'))
+      % the actual model does not have any dataset yet, take the very last model
       M = M_try;
     end
-    gp_predict = @(x_gp) modelPredict(M, x_gp);
-    % % this is GADS Toolbox, which we dont have license for :(
-    %{
-    got_opts = optimset('Algorithm', 'interior-point');
-    problem = createOptimProblem('fmincon', 'objective',... 
-      gp_predict,'x0',run.attempts{att}.bests.x(end,:),'lb',-1,'ub',1,'options',got_opts);
-    gs = GlobalSearch;
-    [minimum,fval] = run(gs, problem);
-    %}
 
-    % this is Matlab core fminsearch() implementation
-    fminoptions = optimset('MaxFunEvals', min(1e6*dim), ...
-      'MaxIter', 1000*dim, ...
-      'Tolfun', 1e-7, ...
-      'TolX', 1e-7, ...
-      'Display', 'off');
-    pop = fminsearch(gp_predict, run.attempts{att}.bests.x(end,:), fminoptions);
+    [best_x_model best_y_model] = findModelMinimum(M, run.attempts{att});
+    pop = best_x_model;
+    % TODO: generate several solutions, not just one
 
     if (length(run.notSPDCovarianceErrors) > 1  &&  run.notSPDCovarianceErrors(end-1) > maxTrainErrors)
       % do restart, because last rescale didn't help
@@ -128,10 +116,16 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
         doRestart = 1;
         fprintf('  NoProbability. Restart.\n');
       end
+      [best_x_model best_y_model exflag] = findModelMinimum(M, run.attempts{att});
+      disp(['Continuous model minimum: f(' num2str(best_x_model) ') = ' ...
+        num2str(best_y_model) ', exflag = ' num2str(exflag)]);
+      pop = best_x_model;
+      % TODO: generate several solutions, not just one
     end
   end
 
   % if there are at least some individuals returned from sampler(s)
+  % or continous model minsearch
   if (exist('pop', 'var') && ~isempty(pop))
 
     run.attempts{att}.populations{it} = pop;
@@ -373,6 +367,27 @@ function [x y] = filterDataset(ds, lob, upb)
 
   x = ds.x(ind, :);
   y = ds.y(ind, :);
+end
+
+
+function [pop fval exflag] = findModelMinimum(model, thisAttempt)
+  gp_predict = @(x_gp) modelPredict(model, x_gp);
+  % % this is GADS Toolbox, which we dont have license for :(
+  %{
+  got_opts = optimset('Algorithm', 'interior-point');
+  problem = createOptimProblem('fmincon', 'objective',...
+    gp_predict,'x0',run.attempts{att}.bests.x(end,:),'lb',-1,'ub',1,'options',got_opts);
+  gs = GlobalSearch;
+  [minimum,fval] = run(gs, problem);
+  %}
+
+  % this is Matlab core fminsearch() implementation
+  fminoptions = optimset('MaxFunEvals', min(1e8*dim), ...
+    'MaxIter', 1000*dim, ...
+    'Tolfun', 1e-10, ...
+    'TolX', 1e-10, ...
+    'Display', 'off');
+  [pop fval exflag] = fminsearch(gp_predict, thisAttempt.bests.x(end,:), fminoptions);
 end
 
 end
