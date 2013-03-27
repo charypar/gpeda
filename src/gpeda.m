@@ -189,34 +189,29 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     run.attempts{att} = initAttempt(lb, ub, options);
     run.notSPDCovarianceErrors = [];
     doRestart = 0;
-  else
-    if doRescale ...
-      || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
-      [nlb nub] = computeRescaleLimits(run.attempts{att}, dim);
+  elseif doRescale || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
+    [nlb nub] = computeRescaleLimits(run.attempts{att}, dim);
 
-      if (min(abs([nlb nub])) > .8)
-        % cancel rescale, we have new limits [-1 -1 ... -1] / [1 1 ... 1]
-        disp('Rescaling conditions DID NOT met, limits [-1..-1] / [1..1]'); 
-        disp('Do restart. There is something wrong in the dataset.'); 
-        doRestart = 1;
-      else
-        if (run.attempts{att}.iterations > 1)
-          disp('Rescaling conditions met, zooming in...');
-          run.attempts{att}.rescaleFlag = 1;
-          run.attempt = run.attempt + 1;
-          att = run.attempt;
+    if (min(abs([nlb nub])) > .8)
+      % cancel rescale, we have new limits [-1 -1 ... -1] / [1 1 ... 1]
+      disp('Rescaling conditions DID NOT met, limits [-1..-1] / [1..1]'); 
+      disp('Do restart. There is something wrong in the dataset.'); 
+      doRestart = 1;
+    elseif (run.attempts{att}.iterations > 1)
+      disp('Rescaling conditions met, zooming in...');
+      run.attempts{att}.rescaleFlag = 1;
+      run.attempt = run.attempt + 1;
+      att = run.attempt;
 
-          run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
-          disp('Got rescale attempt');
-          run.attempts{att}
-        else
-          disp('Rescaling canceled, rescale was already in the last attempt.');
-        end
-      end
-      doRescale = 0;
+      run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
+      disp('Got rescale attempt');
+      run.attempts{att}
+    else
+      disp('Rescaling canceled, rescale was already in the last attempt.');
     end
-  end
 
+    doRescale = 0;
+  end
 end
 
 % return the best overall
