@@ -5,7 +5,7 @@ tol = opts.tolerance;
 xbest = run.attempts{run.attempt}.bests.x;
 dim = size(xbest, 2);
 
-if(length(xbest) < 5)
+if(size(xbest,1) < 5)
   tf = 0;
   return;
 end

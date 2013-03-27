@@ -4,7 +4,7 @@ function xbest = opt_gpeda(FUN, DIM, ftarget, maxfunevals)
 % and evaluates them on FUN until ftarget of maxfunevals
 % is reached, or until 1e8 * DIM fevals are conducted. 
 
-opts.popSize = min(maxfunevals - 20*DIM, 10*DIM); % TODO test how to set this
+opts.popSize = max(2, min(maxfunevals - 20*DIM, 10*DIM)); % TODO test how to set this
 opts.lowerBound = ones(1, DIM) * -5;
 opts.upperBound = ones(1, DIM) * 5;
 

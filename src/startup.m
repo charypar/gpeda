@@ -19,3 +19,4 @@ addpath([dirname, 'util']);
 % setup the GPML package
 run([dirname, 'vendor/', 'gpml-matlab-v3.2/', 'startup'])
 
+clear('dirname', 'fname');

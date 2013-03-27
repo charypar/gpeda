@@ -12,6 +12,8 @@ p = genpath(pathstr);
 
 addpath(p);
 
+clear('p', 'pathstr');
+
 % pathsToAdd = {'bbob' 'bbob' 'bench' 'tests' 'util' 'vendor ' 'vendor/bbob' 'vendor/cmaes'};
 % for i = 1:length(pathsToAdd)
 %   disp([pathstr filesep pathsToAdd{i}]);
