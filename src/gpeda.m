@@ -108,10 +108,9 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     M = M_try;
     run.attempts{att}.model = M;
     disp(['Sampling population ' int2str(it) '...']);
-    % try
+    try
       [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
-    %{
-    % catch err
+    catch err
       disp(['Sample error: ' err.identifier]);
       disp(getReport(err));
       if strcmp(err.identifier, 'sampleGibbs:NarrowDataset')
@@ -130,7 +129,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
         fprintf('  NoProbability. Restart.\n');
       end
     end
-    %}
   end
 
   % if there are at least some individuals returned from sampler(s)
