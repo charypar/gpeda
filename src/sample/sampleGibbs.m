@@ -24,22 +24,34 @@ thresholds = [0 0.001 0.30 1.0 3.0];
 thresholds = flipdim(thresholds, 2);
 targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 
-% the minimum distance of X's in the dataset must be > minTolX
-minDist = sqrt(min(min( sq_dist(attempt.dataset.x') + eye(length(attempt.dataset.x)) )));
-if (minDist < spar.minTolX)
-  exception = MException('sampleGibbs:NarrowDataset', ...
-              ['The distances in the given dataset (' num2str(minDist) ') are below minTolX = ' num2str(spar.minTolX)]);
+% % the minimum distance of X's in the dataset must be > minTolX
+% minDist = sqrt(min(min( sq_dist(attempt.dataset.x') + eye(length(attempt.dataset.x)) )));
+% if (minDist < spar.minTolX)
+%   exception = MException('sampleGibbs:NarrowDataset', ...
+%               ['The distances in the given dataset (' num2str(minDist) ') are below minTolX = ' num2str(spar.minTolX)]);
+%   tolXDistRatio = 1;
+%   throw(exception);
+% end
+
+% check if covariance matrix is positive definite
+lx = size(attempt.dataset.x,1);
+spd = isCovarianceSPD(M, attempt.dataset.x);
+if (spd < lx)
+  exception = MException('sampleGibbs:CovarianceMatrixNotSPD', ...
+              ['The matrix is not positive definite: p (from LL decomp) = ' num2str(lx - spd)]);
   tolXDistRatio = 1;
   throw(exception);
 end
 
 errCode = -1; i = 1;
+s = [];
+nTolXErrors = 0;
 while (errCode ~= 0 && i <= length(thresholds))
   density = @(xSpace) modelGetPOI(M, xSpace, targets(i));
 
-  % DEBUG
+  % % DEBUG
   % debugGridSize = 201;
-  % [xyColumn xm ym] = grid2d(lb, ub, debugGridSize);
+  % [xyColumn xm ym] = grid2d(-1*ones(1,dim), ones(1,dim), debugGridSize);
   % poi = density(xyColumn);
   % % f = figure();
   % s1 = subplot(2,2,[1 3]);
@@ -48,7 +60,7 @@ while (errCode ~= 0 && i <= length(thresholds))
   % s2(1) = subplot(2,2,2);
   % s2(2) = subplot(2,2,4);
   % debugArgs = {};
-  % /DEBUG
+  % % /DEBUG
   
   % % try use fminsearch() to find a place with highest POI
   % % -- does not work well :(
@@ -61,14 +73,36 @@ while (errCode ~= 0 && i <= length(thresholds))
   % fprintf('sampleGibbs(): Maximal POI found at (%s) with exitflag %d.\n', num2str(maxPOIfmins), exitflag);
   % startX = maxPOIfmins;
 
+  % ycond = @(y) (y>0);
+  % maxPOIX = [];
+  % [maxPOIX, maxPOIY] = getMax(density, dim, ycond);
+  
   % evaluate POI on a grid and access point with the highest POI
   % TODO: try running sampler for each such a region, not just maxPOI
-  xyz = gridnd(-1*ones(1,dim), ones(1,dim), 101);
+  xyz = gridnd(-1*ones(1,dim), ones(1,dim), 20);
   xyzPOI = density(xyz);
-  [maxXyzPOI ind] = max(xyzPOI);
+  [maxPOIY ind] = max(xyzPOI);
   startX = xyz(ind,:);
 
-  [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x, spar); % , debugArgs);
+  if (maxPOIY > 0)
+    [s_, errCode, nTolXErrors_] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x, spar); % , debugArgs);
+
+    if (size(s_,1) > size(s,1))
+      s = s_;
+      nTolXErros = nTolXErrors_;
+    end
+  else
+    errCode = 1;
+  end
+  % TODO: start the sampler in multiple local maxima of POI, not just one of them
+  %       draft of such code is below
+  % errCode = 1; nTolXErrors = 0;
+  % pointsPOI = 1;
+  % while (size(s, 1) < nsamples && pointsPOI <= size(maxPOIX,1))
+  %   [newPop, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, maxPOIX(pointsPOI,:), attempt.dataset.x, spar); % , debugArgs);
+  %   s = [s; newPop];
+  %   pointsPOI = pointsPOI + 1;
+  % end
 
   switch (errCode)
   case 1
@@ -86,13 +120,18 @@ else
   tolXDistRatio = 0;
 end
 
-switch (errCode)
-case 1
-  exception = MException('sampleGibbs:NoProbability', 'There is no probability of improvement.');
-  throw(exception);
-case 2
-  exception = MException('sampleGibbs:NarrowProbability', 'Could not sample enough individuals far enough between each other.');
-  throw(exception);
+if (isempty(s))
+  switch (errCode)
+  case 1
+    exception = MException('sampleGibbs:NoProbability', 'There is no probability of improvement.');
+    throw(exception);
+  case 2
+    exception = MException('sampleGibbs:NarrowProbability', 'Could not sample enough individuals far enough between each other.');
+    throw(exception);
+  otherwise
+    exception = MException('sampleGibbs:EmptyPopulation', 'Population is empty.');
+    throw(exception);
+  end
 end
 
 function [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, dataset, spar, debugArgs)
@@ -194,10 +233,17 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
         optOut = (F < sqrt(eps)) | (F > (1 - sqrt(eps)));
         F(optOut) = [];
         xGrid(optOut) = [];
-        xGrid = [xGrid(1) - F(1)*(xGrid(2)-xGrid(1))/(F(2)-F(1)); ...
-          xGrid; ...
-          xGrid(end) + (1-F(end))*(xGrid(end)-xGrid(end-1))/(F(end)-F(end-1))];
-        F = [0; F; 1];
+        if (length(xGrid) > 1)
+          xGrid = [xGrid(1) - F(1)*(xGrid(2)-xGrid(1))/(F(2)-F(1)); ...
+            xGrid; ...
+            xGrid(end) + (1-F(end))*(xGrid(end)-xGrid(end-1))/(F(end)-F(end-1))];
+          F = [0; F; 1];
+        else
+          % warning('sampleGibbs(): There is no probability of improvement. Giving up.');
+          errCode = 1;
+          s((nSampled+1):end,:) = [];
+          return
+        end
       end
       
       % draw a sample from the estimated marginal 1D distribution
@@ -223,14 +269,15 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
     % hold(debugArgs{1},'off');
     % /DEBUG
   end
+
   % Check the TolX condition:
   dataset_s = [dataset; s(1:nSampled,:)];
   min_d = min(distToDataset(x, dataset_s));
-  if (min_d < spar.minTolX)
-    nTolXErrors = nTolXErrors + 1;
-  else
+  if ((min_d >= spar.minTolX) && isCovarianceSPD(M, dataset_s, 'bool'))
     nSampled = nSampled + 1;
     s(nSampled,:) = x;
+  else
+    nTolXErrors = nTolXErrors + 1;
   end
   % DEBUG
   % hold(debugArgs{1},'on');
@@ -267,5 +314,51 @@ function d = distToDataset(x, dataset)
   ds = (xs - dataset);
   d  = sqrt(sum(ds.^2,2));
 end % subfunction distToDataset()
+
+function res = isCovarianceSPD(M, x_, varargin)
+% checks if covariance matrix is positive definite
+  lenx = length(x_);
+  K = feval(M.covfunc, M.hyp.cov, x_);
+  sn2 = exp(2*M.hyp.lik);
+  % [L p] = chol(eye(lenx)+K);
+  [L p] = chol(K/sn2+eye(lenx));
+
+  if ((nargin > 2) && strcmpi(varargin{1}, 'bool'))
+    res = (p == 0);
+  else
+    res = (lenx - p);
+  end
+
+  % L = chol(eye(length(x_))+sW*sW'.*K);
+  %
+  % sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
+  % L = chol(K/sn2+eye(n) + 0.0001*eye(n));               % Cholesky factor of covariance with noise
+  % alpha = solve_chol(L,y-m)/sn2;
+end
+
+function [maxPOIX, maxPOIY] = getMax(f, dim, ycond)
+  % evaluate function on a grid and start a fminsearch() from such a point
+  % to find local maxima of the input function
+  gridN = 5;
+  maxPOIY = []; maxPOIX = [];
+
+  xyz = gridnd(-1*ones(1,dim), ones(1,dim), gridN);
+  for grid_i = 1:size(xyz,1)
+    % % for each point in the grid, try fminsearch()
+    [maxX, maxY] = fminsearch(f, xyz(grid_i,:));
+    % check condition on Y value
+    if (ycond(maxY))
+      if (~isempty(maxPOIY))
+        ds = min(distToDataset(maxX, maxPOIX));
+      else
+        ds = 1;
+      end
+      if (ds > sqrt(eps))
+        maxPOIX = [maxPOIX; maxX];
+        maxPOIY = [maxPOIY;  maxY];
+      end
+    end
+  end
+end
 
 end % function

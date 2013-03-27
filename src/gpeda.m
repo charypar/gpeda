@@ -34,6 +34,9 @@ function [xopt varargout] = gpeda(options, eval, doe, sampler, rescale, restart,
 % run  - struct containing various statistics about the whole optimization run, including the dataset,
 %   individual populations and predictions
 
+maxTrainErrors = 8;
+% FIXME: add it to options!
+
 lb = options.lowerBound(:)';
 ub = options.upperBound(:)';
 n  = options.popSize;
@@ -43,12 +46,14 @@ run.options = options;
 
 run.attempt = 1;
 run.attempts = {};
+run.notSPDCovarianceErrors = [];
 
 att = 1;
 run.attempts{att} = initAttempt(lb, ub, options);
 pop = [];
 
 disp(sprintf('\n ==== Starting new optimization run ==== \n'));
+doRestart = 0; doRescale = 0;
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
   att = run.attempt;
@@ -57,103 +62,160 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   M = run.attempts{att}.model;
   scale = run.attempts{att}.scale;
   shift = run.attempts{att}.shift;
+  pop = []; tolXDistRatio = 0;
 
   disp(sprintf('\n-- Attempt %d, iteration %d --', att, it));
 
   % train model
   disp(['Training model...']);
-  M = modelTrain(M, ds.x, ds.y);
-  run.attempts{att}.model = M;
+  [M_try nErrors] = modelTrain(M, ds.x, ds.y);
+  run.notSPDCovarianceErrors = [run.notSPDCovarianceErrors nErrors];
 
-  % sample new population
-  disp(['Sampling population ' int2str(it) '...']);
-  narrowProbabilityRescale = 0;
-  try
-    cannotSample = 0;
-    [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
-  catch err
-    disp(['Sample error: ' err.identifier]);
-    disp(getReport(err));
-    if strcmp(err.identifier, 'sampleGibbs:NarrowDataset')
-      cannotSample = 1;
-      fprintf('  NarrowDataset: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+  if (nErrors > maxTrainErrors) 
+    disp('Too many errors while training model. Find and evaluate minimum of the GP model.');
+    if (~isfield(run.attempts{att}.model, 'dataset'))
+      M = M_try;
     end
-    if strcmp(err.identifier, 'sampleGibbs:NarrowProbability')
-      narrowProbabilityRescale = 1;
-      fprintf('  NarrowProbability: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+    gp_predict = @(x_gp) modelPredict(M, x_gp);
+    % % this is GADS Toolbox, which we dont have license for :(
+    %{
+    got_opts = optimset('Algorithm', 'interior-point');
+    problem = createOptimProblem('fmincon', 'objective',... 
+      gp_predict,'x0',run.attempts{att}.bests.x(end,:),'lb',-1,'ub',1,'options',got_opts);
+    gs = GlobalSearch;
+    [minimum,fval] = run(gs, problem);
+    %}
+
+    % this is Matlab core fminsearch() implementation
+    fminoptions = optimset('MaxFunEvals', min(1e6*dim), ...
+      'MaxIter', 1000*dim, ...
+      'Tolfun', 1e-7, ...
+      'TolX', 1e-7, ...
+      'Display', 'off');
+    pop = fminsearch(gp_predict, run.attempts{att}.bests.x(end,:), fminoptions);
+
+    if (length(run.notSPDCovarianceErrors) > 1  &&  run.notSPDCovarianceErrors(end-1) > maxTrainErrors)
+      % do restart, because last rescale didn't help
+      disp('--> 2nd time! Restart.');
+      doRestart = 1; doRescale = 0;
+    else  % if (nErrors > maxTrainErrors) 
+      % first train error, do rescale
+      disp('--> 1st time, do rescale and we will see.');
+      doRescale = 1; doRestart = 0;
     end
-    if strcmp(err.identifier, 'sampleGibbs:NoProbability')
-      cannotSample = 1;
-      fprintf('  NoProbability. Restart.\n');
-    end
-  end
-
- % if there are at least some individuals returned from sampler(s)
- if (exist('pop') && ~isempty(pop))
-
-  run.attempts{att}.populations{it} = pop;
-  run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
-
-  if nargin > 7 && isa(varargin{1}, 'function_handle')
-    feval(varargin{1}, run)
-  end
-
-  % evaluate and add to dataset
-  disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
-
-  [m s2] = modelPredict(M, pop);
-
-  x = transform(pop, scale, shift);
-  y = feval(eval, x, m, s2, options.eval);
-
-  run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(y);
-
-  % store the best so far
-  [ymin i] = min(y);
-  if size(run.attempts{att}.bests.yms2, 1) < 1 || ymin < run.attempts{att}.bests.yms2(end, 1)
-    % record improved solution
-    ev = run.attempts{att}.evaluations;
-    fprintf('Best solution improved to f(%s) = %s. (used %d evaluations in this attempt)\n', num2str(pop(i,:)), num2str(ymin), ev);
-    run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
-    run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
   else
-    disp(['Best solution did not improve']);
-    % record unbeaten last solution
-    run.attempts{att}.bests.x(end + 1, :) = run.attempts{att}.bests.x(end, :);
-    run.attempts{att}.bests.yms2(end + 1, :) = run.attempts{att}.bests.yms2(end, :);
+    % sample new population
+    M = M_try;
+    run.attempts{att}.model = M;
+    disp(['Sampling population ' int2str(it) '...']);
+    % try
+      [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
+    %{
+    % catch err
+      disp(['Sample error: ' err.identifier]);
+      disp(getReport(err));
+      if strcmp(err.identifier, 'sampleGibbs:NarrowDataset')
+        doRestart = 1;
+        fprintf('  NarrowDataset: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+      end
+      if strcmp(err.identifier, 'sampleGibbs:CovarianceMatrixNotSPD')
+        doRestart = 1; fprintf(err.message);
+      end
+      if strcmp(err.identifier, 'sampleGibbs:NarrowProbability')
+        doRescale = 1;
+        fprintf('  NarrowProbability: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+      end
+      if strcmp(err.identifier, 'sampleGibbs:NoProbability')
+        doRestart = 1;
+        fprintf('  NoProbability. Restart.\n');
+      end
+    end
+    %}
   end
 
-  % add new samples to the dataset for next iteration
-  disp(['Augmenting dataset']);
-  run.attempts{att}.dataset.x = [ds.x; pop];
-  run.attempts{att}.dataset.y = [ds.y; y];
+  % if there are at least some individuals returned from sampler(s)
+  if (exist('pop', 'var') && ~isempty(pop))
 
-  % and we've completed an iteration
-  run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
+    run.attempts{att}.populations{it} = pop;
+    run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
 
- % end if -- if (exist(pop) && ~isempty(pop))
- end
+    run.attempts{att}.model = M;
+    if nargin > 7 && isa(varargin{1}, 'function_handle')
+      feval(varargin{1}, run)
+    end
+
+    % evaluate and add to dataset
+    disp(['Evaluating ' num2str(size(pop, 1)) ' new individuals']);
+
+    [m s2] = modelPredict(M, pop);
+
+    x = transform(pop, scale, shift);
+    y = feval(eval, x, m, s2, options.eval);
+
+    run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(y);
+
+    % store the best so far
+    [ymin i] = min(y);
+    if size(run.attempts{att}.bests.yms2, 1) < 1 || ymin < run.attempts{att}.bests.yms2(end, 1)
+      % record improved solution
+      ev = run.attempts{att}.evaluations;
+      fprintf('Best solution improved to f(%s) = %s. (used %d evaluations in this attempt)\n', num2str(pop(i,:)), num2str(ymin), ev);
+      run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
+      run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
+    else
+      disp(['Best solution did not improve']);
+      % record unbeaten last solution
+      run.attempts{att}.bests.x(end + 1, :) = run.attempts{att}.bests.x(end, :);
+      run.attempts{att}.bests.yms2(end + 1, :) = run.attempts{att}.bests.yms2(end, :);
+    end
+
+    % add new samples to the dataset for next iteration
+    disp(['Augmenting dataset']);
+    run.attempts{att}.dataset.x = [ds.x; pop];
+    run.attempts{att}.dataset.y = [ds.y; y];
+
+    % and we've completed an iteration
+    run.attempts{att}.iterations = run.attempts{att}.iterations + 1;
+
+  else
+    disp('Warning: pop is empty!');
+  end   % if (exist('pop') && ~isempty(pop))
 
   % if one of the restart conditions occurs
-  if cannotSample || (isfield(options, 'restart') && evalconds(restart, run, options.restart))
+  if doRestart || (isfield(options, 'restart') && evalconds(restart, run, options.restart))
     disp(['Restart conditions met, starting over...']);
     run.attempt = run.attempt + 1;
     att = run.attempt;
   
     % initialize new attempt
     run.attempts{att} = initAttempt(lb, ub, options);
+    run.notSPDCovarianceErrors = [];
+    doRestart = 0;
   else
-    if narrowProbabilityRescale ...
+    if doRescale ...
       || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
-      disp('Rescaling conditions met, zooming in...');
-      run.attempt = run.attempt + 1;
-      att = run.attempt;
-      
-      [nlb nub] = computeRescaleLimits(run.attempts{att-1}, dim);
+      [nlb nub] = computeRescaleLimits(run.attempts{att}, dim);
 
-      run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
-      disp('Got rescale attempt');
-      run.attempts{att}
+      if (min(abs([nlb nub])) > .8)
+        % cancel rescale, we have new limits [-1 -1 ... -1] / [1 1 ... 1]
+        disp('Rescaling conditions DID NOT met, limits [-1..-1] / [1..1]'); 
+        disp('Do restart. There is something wrong in the dataset.'); 
+        doRestart = 1;
+      else
+        if (run.attempts{att}.iterations > 1)
+          disp('Rescaling conditions met, zooming in...');
+          run.attempts{att}.rescaleFlag = 1;
+          run.attempt = run.attempt + 1;
+          att = run.attempt;
+
+          run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
+          disp('Got rescale attempt');
+          run.attempts{att}
+        else
+          disp('Rescaling canceled, rescale was already in the last attempt.');
+        end
+      end
+      doRescale = 0;
     end
   end
 
@@ -203,6 +265,7 @@ function attempt = initAttempt(lb, ub, options)
 
   attempt.populations = {};
   attempt.tolXDistRatios = [1];
+  attempt.rescaleFlag = 0;
 
   [ym, im] = min(attempt.dataset.y);
   attempt.bests.x = attempt.dataset.x(im,:);    % a matrix with best input vectors rows 
@@ -278,7 +341,7 @@ function [lb ub] = computeRescaleLimits(attempt, dim)
   dsx = attempt.dataset.x;
   dsxopt = repmat(attempt.bests.x(end, :), size(dsx, 1), 1);
 
-  disp('Rescaling dataset');
+  disp('Rescaling dataset fired, computing new limits.');
 
   % compute distances from the current optimum
   dist = sqrt(sum((dsxopt - dsx).^2, 2));
