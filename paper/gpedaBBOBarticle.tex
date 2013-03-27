@@ -117,7 +117,7 @@ Testbed
 % without further effort on your part as the last section in
 % the body of your article BEFORE References or any Appendices.
 
-\numberofauthors{1} %  in this sample file, there are a *total*
+\numberofauthors{2} %  in this sample file, there are a *total*
 % of EIGHT authors. SIX appear on the 'first-page' (for formatting
 % reasons) and the remaining two appear in the \additionalauthors section.
 %
@@ -134,19 +134,22 @@ Testbed
 %
 % 1st. author
 \alignauthor
-Forename Name\\ %\titlenote{Dr.~Trovato insisted his name be first.}\\
-%       \affaddr{Institute for Clarity in Documentation}\\
-%       \affaddr{1932 Wallamaloo Lane}\\
-%       \affaddr{Wallamaloo, New Zealand}\\
-%       \email{trovato@corporation.com}
-%% 2nd. author
-%\alignauthor
-%G.K.M. Tobin\titlenote{The secretary disavows
-%any knowledge of this author's actions.}\\
-%       \affaddr{Institute for Clarity in Documentation}\\
-%       \affaddr{P.O. Box 1212}\\
-%       \affaddr{Dublin, Ohio 43017-6221}\\
-%       \email{webmaster@marysville-ohio.com}
+Lukáš Bajer \\
+       \affaddr{Institute of Computer Science}\\
+       \affaddr{Academy of Sciences of the Czech Republic}\\
+       \affaddr{Pod Vodarenskou vezi 2}\\
+       \affaddr{182 07 Prague 8}\\
+       \affaddr{Czech Republic}\\
+       \email{bajer@cs.cas.cz}
+% 2nd. author
+\alignauthor
+Viktor Charypar \\
+       \affaddr{Faculty of Nuclear Sciences and Physical Engineering}\\
+       \affaddr{Czech Technical University in Prague}\\
+       \affaddr{Trojanova 13}\\
+       \affaddr{120 00 Prague 2}\\
+       \affaddr{Czech Republic}\\
+       \email{charyvik@fjfi.cvut.cz}
 %% 3rd. author
 %\alignauthor Lars Th{\o}rv{\"a}ld\titlenote{This author is the
 %one who did all the really hard work.}\\
@@ -188,6 +191,7 @@ Forename Name\\ %\titlenote{Dr.~Trovato insisted his name be first.}\\
 
 \maketitle
 \begin{abstract}
+Abstract goes here. Bla bla bla bla.
 \end{abstract}
 
 % Add any ACM category that you feel is needed
@@ -199,16 +203,39 @@ unconstrained optimization]
 \terms{Algorithms}
 
 % Complete with anything that is needed
-\keywords{Benchmarking, Black-box optimization}
+\keywords{Benchmarking, Black-box optimization, Surrogate modeling, Gaussian Processes}
 
-% \section{Introduction}
-%
-% \section{Algorithm Presentation}
-%
-% \section{Experimental Procedure}
-%
-% \section{CPU Timing}
-%
+\section{Introduction}
+
+% introduction to EDA
+% Model building
+% Gaussian Processes
+% Probability of improvement
+% Replacing Normal distribution with a Gausssian process
+
+\section{Gaussian Processes}
+
+% Stochastic model, generalization of gaussian distribution
+% a collection of random variables, any finite number of which have a joint Gaussian distribution. [Rasmussen]
+% completely specified by mean and covariance functions
+% f(x) ~ GP(m(x), k(x, x')
+% using constant m and squared exponential cov (def)
+% probabilty of improvement definition (Jones)
+% sampled in the optimization
+
+\section{Algorithm Presentation}
+
+% Similar idea to [Jones 98]. Instead of maximizing the PoI samples the new population using it
+% working in [-1, 1]^D allows for rescaling when region of the optimum is found
+% algorithm steps/pseudocode
+% sampling description (Gibbs method)
+
+\section{Parameter setup}
+
+% No study has been done, empirical values
+% population size, initial sample 
+% rescaling conditions
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
