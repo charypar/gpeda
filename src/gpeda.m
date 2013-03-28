@@ -217,6 +217,7 @@ shifts = cell2mat(cellMap(run.attempts, @(attempt)( attempt.shift )));
 
 [yopt iopt] = min(besty)
 xopt = transform(bestx(iopt,:), scales(iopt), shifts(iopt));
+% FIXME: transform is wrong
 
 if nargout > 0
   varargout{1} = run;

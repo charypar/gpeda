@@ -13,12 +13,26 @@ opts.doe.n = 30; % initial dataset
 opts.doe.minTolX = 0.002; % min distance in dataset
 opts.doe.maxSampleTries = 20; % max. number of tries when not enough spread samples
 opts.sampler.target = t; % testing on x^2, we know the target
-opts.stop = {
-  struct('evaluations', 600),
-  struct('target', t)
+
+rescaleConds = {@stopTolX, @stopTolXDistRatio};
+opts.rescale = {
+  struct('tolerance', 0.1),
+  struct('tolerance', 0.5)
 };
 
-[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, [], [], {@stopTotEvals, @stopTargetReached}, @gpedaStep2d);
+restartConds = {@stopStallGen};
+opts.restart = {
+  struct('generations', 5);
+};
+
+stopConds = {@stopTotEvals, @stopTargetReached};
+opts.stop = {
+  struct('evaluations', 600),
+  struct('target', 1e-8)
+};
+
+
+[xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, rescaleConds, restartConds, stopConds, @gpedaStep2d);
 
 xopt
 run

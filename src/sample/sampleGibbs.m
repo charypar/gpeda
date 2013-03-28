@@ -21,17 +21,8 @@ tolXDistRatio = 0;
 % thresholds = [0 0.0001 0.001 (0.01 * (1:3:13)) 0.15 0.20 0.25 ...
 %   0.30 0.50 1.0 2.0 3.0];
 thresholds = [0 0.001 0.30 1.0 3.0];
-thresholds = flipdim(thresholds, 2);
+% thresholds = flipdim(thresholds, 2);
 targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
-
-% % the minimum distance of X's in the dataset must be > minTolX
-% minDist = sqrt(min(min( sq_dist(attempt.dataset.x') + eye(length(attempt.dataset.x)) )));
-% if (minDist < spar.minTolX)
-%   exception = MException('sampleGibbs:NarrowDataset', ...
-%               ['The distances in the given dataset (' num2str(minDist) ') are below minTolX = ' num2str(spar.minTolX)]);
-%   tolXDistRatio = 1;
-%   throw(exception);
-% end
 
 % check if covariance matrix is positive definite
 lx = size(attempt.dataset.x,1);
