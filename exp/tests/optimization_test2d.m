@@ -5,7 +5,7 @@ opts.popSize = 20;
 opts.lowerBound = [-5 -5];
 opts.upperBound = [ 5  5];
 
-opts.eval.handle = @rosenbrock2;
+opts.eval.handle = @rastrigin;
 
 t = 1e-6;
 
@@ -31,6 +31,13 @@ opts.stop = {
   struct('target', 1e-8)
 };
 
+hyp.cov = log([0.1, 0.1]);
+hyp.mean = [0];
+hyp.lik = log(0.0001);
+mean = @meanConst;
+cov = @covSEiso;
+DIM = size(opts.lowerBound, 2);
+opts.model = modelInit(DIM, hyp, mean, cov);
 
 [xopt run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, rescaleConds, restartConds, stopConds, @gpedaStep2d);
 

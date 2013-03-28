@@ -212,12 +212,12 @@ end
 
 besty = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.yms2(end, 1) )));
 bestx = cell2mat(cellMap(run.attempts, @(attempt)( attempt.bests.x(end, :)' )))';
-scales = cell2mat(cellMap(run.attempts, @(attempt)( attempt.scale )));
-shifts = cell2mat(cellMap(run.attempts, @(attempt)( attempt.shift )));
+scales = cell2mat(cellMap(run.attempts, @(attempt)( attempt.scale' )))';
+shifts = cell2mat(cellMap(run.attempts, @(attempt)( attempt.shift' )))';
 
 [yopt iopt] = min(besty)
-xopt = transform(bestx(iopt,:), scales(iopt), shifts(iopt));
-% FIXME: transform is wrong
+xopt = transform(bestx(iopt,:), scales(iopt, :), shifts(iopt, :));
+disp('Displaying bestx and besty of all the attempts:');
 
 if nargout > 0
   varargout{1} = run;
@@ -225,8 +225,8 @@ end
 
 % Support functions
 
-function attempt = initAttempt(lb, ub, options)
-  D = length(lb);
+function attempt = initAttempt(re_lb, re_ub, options)
+  D = length(re_lb);
 
   if(isfield(options, 'model'))
     attempt.model = options.model;
@@ -235,8 +235,8 @@ function attempt = initAttempt(lb, ub, options)
   end
 
   attempt.iterations = 1;
-  attempt.scale = (ub - lb) / (1 + 1);
-  attempt.shift = -1 - (lb ./ attempt.scale);
+  attempt.scale = (re_ub - re_lb) / (1 + 1);
+  attempt.shift = -1 - (re_lb ./ attempt.scale);
 
   % generate initial dataset
   attempt.dataset.x = feval(doe, D, options.doe);
@@ -260,8 +260,8 @@ function attempt = initAttempt(lb, ub, options)
   attempt.bests.yms2 = [ym 0 0]; % a matrix with rows [y m s2] for the best individual in each generation
 end
 
-function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
-  D = length(lb);
+function attempt = initRescaleAttempt(lastAttempt, re_lb, re_ub, options)
+  D = length(re_lb);
 
   if(isfield(options, 'model'))
     attempt.model = options.model;
@@ -273,17 +273,17 @@ function attempt = initRescaleAttempt(lastAttempt, lb, ub, options)
   lastShift = lastAttempt.shift;
 
   attempt.iterations = 1;
-  oub = transform(ub, lastScale, lastShift);
-  olb = transform(lb, lastScale, lastShift);
+  oub = transform(re_ub, lastScale, lastShift);
+  olb = transform(re_lb, lastScale, lastShift);
 
   attempt.scale = (oub - olb) / 2;
   %attempt.shift = -(olb + oub) / 2;
   attempt.shift = -1 - (olb ./ attempt.scale);
 
   % generate initial dataset
-  [fx fy] = filterDataset(lastAttempt.dataset, lb, ub);
-  scaleDataset = (ub - lb) / (1 + 1);
-  shiftDataset = -1 - (lb ./ scaleDataset);
+  [fx fy] = filterDataset(lastAttempt.dataset, re_lb, re_ub);
+  scaleDataset = (re_ub - re_lb) / (1 + 1);
+  shiftDataset = -1 - (re_lb ./ scaleDataset);
   attempt.dataset.x = inv_transform(fx, scaleDataset, shiftDataset);
   attempt.dataset.y = fy;
 
