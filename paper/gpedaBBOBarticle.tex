@@ -58,6 +58,11 @@
 \input{\bbobdatapath bbob_pproc_commands.tex} % provide default of algname and algfolder
 % \renewcommand{\algname}{MYNAME}  % name of algorithm as it should appear in the text
 % \renewcommand{\algfolder}{ABC/} % subfolder of \bbobdatapath for processed algorithm
+
+\newcommand{\xx}{\mathrm{\mathbf{x}}}
+\newcommand{\yy}{\mathrm{\mathbf{y}}}
+\newcommand{\ttheta}{\mathbf{\theta}}
+\newcommand{\eell}{\boldsymbol\ell}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,25 +225,53 @@ Another such approach is using Gaussian Process (GP) models for optimization fit
 and selecting next candidate solution based on the mean and variance of the predictive distribution given 
 by the GP. The optimization works by selecting such a point, adding it to the dataset and fitting a new
 model on the resulting data. The candidate selection criteria are responsible for balancing exploration and
-exploitation of the input space. A number of criteria were examined by Jones et al. [Jones 01], of which the Probability of Improvement (PoI) is of interest for this work.
+exploitation of the input space. A number of criteria were examined by Jones et al. [Jones 01], of which the 
+Probability of Improvement (PoI) is of interest for this work.
 
 We propose a novel optimization method - XYZ - based on a combination of the GP optimization and EDAs. One can either
 view the change as replacing the distribution model in EDA with a probability of improvement of a GP model 
 fitted to all known data, or, from the latter point of view, as, instead of maximizing the PoI to find a single
 candidate solution, sampling a set of candidate solution proportionally to the PoI. 
 
-In this paper, XYZ is benchmarekd on X functions and number of evaluations to reach a given target function value is
-presented.
+\section{Gaussian process regression}
 
-\section{Gaussian Process regression}
+Gaussian process regression is a stochastic modeling method based on a multidimensional Gaussian distribution. 
+GP a collection of random variables, any finite number of which have a joint Gaussian distribution [Rasmussen]
+and thus it can be viewed as a distribution over the space of functions. We can condition this distribution
+on training data and getting a posterior distribution of functions which agree with our observations.
+A prediction in a testing point then gives a Gaussian distribution with some mean and variance. 
 
-% Stochastic model, generalization of gaussian distribution
-% a collection of random variables, any finite number of which have a joint Gaussian distribution. [Rasmussen]
-% completely specified by mean and covariance functions
-% f(x) ~ GP(m(x), k(x, x')
-% using constant m and squared exponential cov (def)
-% probabilty of improvement definition (Jones)
-% sampled in the optimization
+A Gaussian process is completely specified by its mean and covariance functions
+$$
+  f(\xx) \sim \mathcal{GP}\left( m(\xx), k(\xx, \xx')\right)
+$$
+where
+\begin{align*}
+  m(\xx) &= \mathbb{E} \left[ f(\xx) \right] \\
+  k(\xx, \xx') &= \mathbb{E} \left[ (f(\xx) - m(\xx))(f(\xx') - m(\xx')) \right] 
+\end{align*}
+
+We use a constant mean function and a squared exponential covariance function with
+automatic relevance determination
+$$
+  k_{\mathrm{SE}}(\xx, \xx') = \sigma_f^2 \exp\left( - \frac{1}{2} (\xx - \xx')^\top M (\xx - \xx') \right)
+$$
+where $ M = \eell^{-2}I $ and fit the hyperparameters $\ttheta = \{ \eell, \sigma_f^2 \}$ by 
+maximizing the likelihood $p(\yy | X, \ttheta)$ ($\yy$ are the observations, $X$ is the observation 
+points matrix). $\eell$ is a vector of characteristic lengths of the process in each coordinate dimension
+and $\sigma_f^2$ is a noise level.
+
+Since the GP gives a Gaussian distribution as prediction, we can think of the distribution's variance
+as confidence of the model in it's prediction and use it to guide optimization. Based on both mean 
+and variance of the prediction we can easily get a probability of improvement [Jones 01] over a 
+certain target $T$ as
+$$
+ \mathrm{PoI} = \mathrm{\Phi}\left( \frac{T - \bar{f_*}}{\mathbb{V}[f_*]} \right)
+$$
+where $\Phi$ is the the Gaussian cumulative distribution function and $f_*$ is the model prediction (a random
+variable) $\bar{f_*}$ is its mean and $\mathbb{V}[f_*]$ is its variance.
+
+XYZ samples this probability of improvement to get a next set of candidate solutions.
 
 \section{The XYZ}
 
