@@ -145,6 +145,8 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     y = feval(eval, x, m, s2, options.eval);
 
     run.attempts{att}.evaluations = run.attempts{att}.evaluations + length(y);
+    run.attempts{att}.bests.evaluations = [run.attempts{att}.bests.evaluations; ...
+      run.attempts{att}.evaluations];
 
     % store the best so far
     [ymin i] = min(y);
@@ -155,7 +157,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
       run.attempts{att}.bests.x(end + 1, :) = pop(i, :);
       run.attempts{att}.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
     else
-      disp(['Best solution did not improve']);
+      disp(['Best solution did not improve, still at ' num2str(run.attempts{att}.bests.yms2(end, :))]);
       % record unbeaten last solution
       run.attempts{att}.bests.x(end + 1, :) = run.attempts{att}.bests.x(end, :);
       run.attempts{att}.bests.yms2(end + 1, :) = run.attempts{att}.bests.yms2(end, :);
@@ -258,6 +260,7 @@ function attempt = initAttempt(re_lb, re_ub, options)
   [ym, im] = min(attempt.dataset.y);
   attempt.bests.x = attempt.dataset.x(im,:);    % a matrix with best input vectors rows 
   attempt.bests.yms2 = [ym 0 0]; % a matrix with rows [y m s2] for the best individual in each generation
+  attempt.bests.evaluations = attempt.evaluations;
 end
 
 function attempt = initRescaleAttempt(lastAttempt, re_lb, re_ub, options)
@@ -299,6 +302,7 @@ function attempt = initRescaleAttempt(lastAttempt, re_lb, re_ub, options)
   [ym, im] = min(attempt.dataset.y);
   attempt.bests.x = attempt.dataset.x(im,:);    % a matrix with best input vectors rows 
   attempt.bests.yms2 = [ym 0 0]; % a matrix with rows [y m s2] for the best individual in each generation
+  attempt.bests.evaluations = attempt.evaluations;
 end
 
 function tf = evalconds(conds, run, opts)
