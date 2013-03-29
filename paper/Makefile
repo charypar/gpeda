@@ -5,10 +5,11 @@ BIB = gecco_lb_abstract
 TMP = gecco_lb_abstract.aux gecco_lb_abstract.log gecco_lb_abstract.bbl gecco_lb_abstract.blg
 
 all: $(OUT)
-$(OUT): clean
-	pdflatex $(SRC)
+$(OUT): clean single
 	bibtex $(BIB)
 	pdflatex $(SRC)
+	pdflatex $(SRC)
+single: 
 	pdflatex $(SRC)
 display: $(OUT)
 	open $(OUT) # Platform dependent
