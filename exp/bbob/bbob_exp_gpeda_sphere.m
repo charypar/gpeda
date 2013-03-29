@@ -81,6 +81,7 @@ for dim = dimensions            % small dimensions first, for CPU reasons
                    etime(clock, t0)/60/60));
 
       fgeneric('finalize');
+      save([datapath filesep exp_id '_tmp.mat'], 'results', 'y_evals');
     end
     disp(['      date and time: ' num2str(clock, ' %.0f')]);
   end

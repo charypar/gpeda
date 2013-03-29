@@ -9,7 +9,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-exp_id = 'exp_cmaes_rosenbrock_00';
+exp_id = 'exp_cmaes_rosenbrock_01';
 
 bbobpath = '../vendor/bbob';    % should point to fgeneric.m etc.
 datapath = ['output/' exp_id];  % different folder for each experiment
