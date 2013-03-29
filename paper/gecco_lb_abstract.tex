@@ -178,7 +178,7 @@ evaluations (a practice known as surrogate modeling) or use the model to guide t
 solutions. We are concerned with the latter.
 
 Estimation of Distribution Algorithms (EDA) present one such approach. An EDA evolves a population of 
-candidate solutions in generations, each of which starts with solution evaluation and selection of the
+candidate solutions in generations, each of which starts with solutions evaluation and selection of the
 promising ones. A probabilistic model of the distribution of the better solutions is then built and new 
 solutions are sampled from it. A comprehensive overview of EDAs and related methods can be found in \cite{pelikan2006scalable}.
 
@@ -188,7 +188,7 @@ promising candidate is added to the dataset and a new model is fitted on the res
 selection criteria based on predictive distribution were examined by Jones et al. \cite{jones01taxonomy}, 
 of which the Probability of Improvement (PoI) is of interest for this work.
 
-We propose a novel optimization method - Model Guided Sampling Optimization (MGSO) - based on a combination of 
+We propose a novel optimization method -- Model Guided Sampling Optimization (MGSO) -- based on a combination of 
 the GP optimization and EDAs. One can either view the novelty as replacing the distribution model in EDA with 
 a probability of improvement of a GP model fitted to all known data, or, from the latter point of view, as, 
 instead of maximizing the PoI to find a single candidate solution, sampling a set of candidate solution 
@@ -226,8 +226,8 @@ certain target $T$ as
 $$
  \mathrm{PoI} = \mathrm{\Phi}\left( \frac{T - \bar{f_*}}{\mathbb{V}[f_*]} \right)
 $$
-where $\Phi$ is the the Gaussian cumulative distribution function and $f_*$ is the model prediction (a random
-variable) $\bar{f_*}$ is its mean and $\mathbb{V}[f_*]$ is its variance.
+where $\Phi$ is the Gaussian cumulative distribution function, $f_*$ is the model prediction (a random
+variable), $\bar{f_*}$ is its mean and $\mathbb{V}[f_*]$ is its variance.
 
 MGSO samples this probability of improvement to get a next set of candidate solutions.
 
@@ -241,8 +241,8 @@ candidate solutions. Solutions are then evaluated, the model is fitted to this a
 dataset and the process is repeated until one of the stop conditions is met.
 
 To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system 
-mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Rescaling restricts the 
-sampling space to a neighborhood of the optimimum, which enables sampling in situation when the PoI is non-zero 
+mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Updating it restricts the 
+sampling space to a neighborhood of the optimimum, which enables sampling in the situation when the PoI is non-zero 
 only in a very small region. Finally, when the neighborhood of the optimum is sufficiently sampled a local search 
 is performed to fine tune the optimum. 
 
@@ -253,13 +253,14 @@ is performed to fine tune the optimum.
   \caption{
     Median of distances to optimum ($f_{\Delta}$) reached using a number of function evaluations
     for three benchmark functions}
+  \label{fig:test}
 \end{figure}
 
 Formally, the algorithm performs as follows:
 \begin{enumerate}[itemsep=-4pt]
-  \item Generate $N_i$ initial samples $\{\xx_0\}$ and evaluate it to get observed values $\{y_0\}$ to obtain
+  \item Generate $N_i$ initial samples $\{\xx_0\}$ and evaluate it to get observed values $\{y_0\}$ forming a
     dataset $\mathcal{S}_0 = \{(\xx_0, y_0)\}$.
-  \item Until the stop conditions are met for $i = 1, 2, \dots$ repeat steps 3 -- 8
+  \item Until the stop conditions are met for $i = 1, 2, \dots$ repeat steps 3--8
   \item Build a GP model $\mathcal{M}_i$ and fit its hyperparameters $\ttheta$ to the dataset $\mathcal{S}_{i-1}$
   \item Sample $N$ new candidate solutions $\{\xx_i\}$ based on the PoI distribtion of $\mathcal{M}_i$
   \item Evaluate $\{\xx_i\}$ to get ${y_i}$ 
@@ -275,15 +276,15 @@ input parameters.
 
 Sampling is performed using the Gibbs method \cite{geman1984stochastic} enabling us to sample multivariate 
 distributions. In our case we sample candidate solutions from  the empirical distribution propotional to 
-the PoI. Samples resulting in ill-conditioned covariance matrices of the GP are rejected.
+the PoI. Samples resulting in ill-con\-di\-tion\-ed covariance matrices of the GP are rejected.
 
 \section{Preliminary results}
 
-The method was tested on three benchmark functions in 2D: Sphere, Rosenbrock function and Rastrigin function 
-\cite{molga05functions}. For each function X optimization runs were performed and best function values 
-$f_{\text{best}}$ in each generation were recorded. Figure X shows the median of distanc to optimum 
-$f_{\Delta} = f_{\text{best}} - f_{\text{opt}}$ reached using a given number of function evaluations
-for each benchmark.
+As a proof of concept, the method was tested on three benchmark functions from the BBOB toolbox \cite{hansen2012fun} 
+in 2D. For each function, 15 optimization runs were performed and best function values 
+$f_{\text{best}}$ in each generation were recorded. Figure \ref{fig:test} shows the median of distance to optimum 
+$f_{\Delta} = f_{\text{best}} - f_{\text{opt}}$ reached using a given number of function evaluations (limited to 500)
+for each benchmark. 
 
 % Figure
 
@@ -296,14 +297,14 @@ This work was supported by
 the Grant Agency of the Charles University (GAUK) 278511/2011,
 the Grant Agency of the Czech Technical University in Prague, grant No. \\ 
 SGS12/196/OHK3/3T/14, 
-and the Czech Science Foundation grant (GA\v{C}R) 201/08/0802.
+and the Czech Science Foundation grant (GA\v{C}R) 13-17187S\_9948
 
 %
 % The following two commands are all you need in the
 % initial runs of your .tex file to
 % produce the bibliography for the citations in your paper.
 \bibliographystyle{abbrv}
-% \bibliography{lb_abstract}  % sigproc.bib is the name of the Bibliography in this case
+%\bibliography{lb_abstract}  % sigproc.bib is the name of the Bibliography in this case
 \begin{thebibliography}{1}
 
 \bibitem{geman1984stochastic}
@@ -313,15 +314,17 @@ S.~Geman and D.~Geman.
 \newblock {\em Pattern Analysis and Machine Intelligence, IEEE Transactions
   on}, (6):721--741, 1984.
 
+\bibitem{hansen2012fun}
+N.~Hansen, S.~Finck, R.~Ros, and A.~Auger.
+\newblock Real-parameter black-box optimization benchmarking 2009: Noiseless
+  functions definitions.
+\newblock Technical Report RR-6829, INRIA, 2009.
+\newblock Updated February 2010.
+
 \bibitem{jones01taxonomy}
 D.~Jones.
 \newblock A taxonomy of global optimization methods based on response surfaces.
 \newblock {\em Journal of Global Optimization}, 21:345--383, 2001.
-
-\bibitem{molga05functions}
-M.~Molga and C.~Smutnicki.
-\newblock Test functions for optimization needs.
-\newblock {\em Test functions for optimization needs}, 2005.
 
 \bibitem{pelikan2006scalable}
 M.~Pelikan and K.~Sastry.
