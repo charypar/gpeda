@@ -48,6 +48,7 @@
 \documentclass{sig-alternate}
 
 \usepackage{graphicx}
+\usepackage{enumitem}
 \usepackage{rotating}
 \usepackage{xcolor}  % color is sufficient
 \pdfpagewidth=8.5in
@@ -72,9 +73,7 @@
 
 % --- End of Author Metadata ---
 
-\title{XYZ with Gaussian Process Models for Expensive Black-Box Optimization}
-\subtitle{Draft version
-\titlenote{Submission deadline: March 28th.}}
+\title{Model Guided Sampling Optimization with Gaussian Processes for Expensive Black-Box Optimization}
 %
 % You need the command \numberofauthors to handle the 'placement
 % and alignment' of the authors beneath the title.
@@ -154,11 +153,11 @@ Martin Holena \\
 
 \maketitle
 \begin{abstract}
-XYZ is a novel expensive black-box optimization method based on
-a combination of ideas from Estimation of Distribution Algorithms and
-global optimization methods using Gaussian Processes. The algorithm
-is described and its implementation tested on three benchmark functions
-as a proof of concept.
+Model Guided Sampling Optimization (MGSO) is a novel expensive black-box
+optimization method based on a combination of ideas from Estimation of 
+Distribution Algorithms and global optimization methods using Gaussian 
+Processes. The algorithm is described and its implementation tested on 
+three benchmark functions as a proof of concept.
 \end{abstract}
 
 % Add any ACM category that you feel is needed
@@ -178,38 +177,34 @@ candidate solutions. We can then either replace the objective function  with thi
 evaluations (a practice known as surrogate modeling) or use the model to guide the selection of candidate 
 solutions. We are concerned with the latter.
 
-Estimation of Distribution Algorithms (EDA) present one such approach that gained popularity in the recent
-decades. An EDA evolves a population of candidate solutions in generations, each of which starts with solution
-evaluation and selection of the promising ones. A probabilistic model of the distribution of the better solutions 
-is then built and new solutions are sampled from it. A comprehensive overview of EDAs and related 
-methods can be found in [Pelikan 2006].
+Estimation of Distribution Algorithms (EDA) present one such approach. An EDA evolves a population of 
+candidate solutions in generations, each of which starts with solution evaluation and selection of the
+promising ones. A probabilistic model of the distribution of the better solutions is then built and new 
+solutions are sampled from it. A comprehensive overview of EDAs and related methods can be found in \cite{pelikan2006scalable}.
 
-Another such approach is using Gaussian Process (GP) models for optimization fitting a GP regression model to the 
-data and selecting next candidate solution based on the mean and variance of the predictive distribution given 
-by the GP. The most promising candidate is added to the dataset and a new model is fitted on the resulting data. 
-The candidate selection criteria are responsible for balancing exploration and exploitation of the input space. 
-A number of criteria were examined by Jones et al. [Jones 01], of which the Probability of Improvement (PoI) 
-is of interest for this work.
+Another approach is using Gaussian Process (GP) model for optimization fitting a GP regression model to the 
+data and selecting next candidate solution based on the predictive distribution given by the GP. The most 
+promising candidate is added to the dataset and a new model is fitted on the resulting data. A number of candidate 
+selection criteria based on predictive distribution were examined by Jones et al. \cite{jones01taxonomy}, 
+of which the Probability of Improvement (PoI) is of interest for this work.
 
-We propose a novel optimization method - XYZ - based on a combination of the GP optimization and EDAs. One can either
-view the novelty as replacing the distribution model in EDA with a probability of improvement of a GP model 
-fitted to all known data, or, from the latter point of view, as, instead of maximizing the PoI to find a single
-candidate solution, sampling a set of candidate solution proportionally to the PoI. 
+We propose a novel optimization method - Model Guided Sampling Optimization (MGSO) - based on a combination of 
+the GP optimization and EDAs. One can either view the novelty as replacing the distribution model in EDA with 
+a probability of improvement of a GP model fitted to all known data, or, from the latter point of view, as, 
+instead of maximizing the PoI to find a single candidate solution, sampling a set of candidate solution 
+proportionally to the PoI. 
 
 \section{Gaussian process regression}
 
 Gaussian process regression is a stochastic modeling method based on a multidimensional Gaussian distribution. 
-GP is a collection of random variables, any finite number of which have a joint Gaussian distribution [Rasmussen], 
-realisations of which are functions. We can condition this distribution on training data and get a posterior 
-distribution of functions which agree with our observations. A prediction in a testing point then gives a Gaussian 
-distribution with some mean and variance. 
+GP is a collection of random variables, any finite number of which have a joint Gaussian distribution 
+\cite{rasmussen2006gaussian}, realisations of which are functions. We can condition this distribution on training 
+data and get a posterior distribution of functions which agree with our observations. A prediction in a testing 
+point then gives a Gaussian distribution with some mean and variance. 
 
 A Gaussian process is completely specified by its mean and covariance functions
-$$
-  f(\xx) \sim \mathcal{GP}\left( m(\xx), k(\xx, \xx')\right)
-$$
-where
 \begin{align*}
+  f(\xx) &\sim \mathcal{GP}\left( m(\xx), k(\xx, \xx')\right) \\
   m(\xx) &= \mathbb{E} \left[ f(\xx) \right] \\
   k(\xx, \xx') &= \mathbb{E} \left[ (f(\xx) - m(\xx))(f(\xx') - m(\xx')) \right] 
 \end{align*}
@@ -226,7 +221,7 @@ and $\sigma_f^2$ is a noise level.
 
 Since the GP gives a Gaussian distribution as prediction, we can think of the distribution's variance
 as confidence of the model in it's prediction and use it to guide optimization. Based on both mean 
-and variance of the prediction we can easily get a probability of improvement [Jones 01] over a 
+and variance of the prediction we can easily get a probability of improvement \cite{jones01taxonomy} over a 
 certain target $T$ as
 $$
  \mathrm{PoI} = \mathrm{\Phi}\left( \frac{T - \bar{f_*}}{\mathbb{V}[f_*]} \right)
@@ -234,25 +229,34 @@ $$
 where $\Phi$ is the the Gaussian cumulative distribution function and $f_*$ is the model prediction (a random
 variable) $\bar{f_*}$ is its mean and $\mathbb{V}[f_*]$ is its variance.
 
-XYZ samples this probability of improvement to get a next set of candidate solutions.
+MGSO samples this probability of improvement to get a next set of candidate solutions.
 
-\section{The XYZ}
+\section{The MGSO}
 
-The basic idea of XYZ is similar to global optimization methods by Jones [Jones 98]: Fit a 
-GP model to an initial sample of data and let the model prediction distribution guide the optimization. 
-The key difference is that XYZ does not maximize the PoI which it uses as a criterion to find a single
-solution candidate to evaluate next. It rather samples the PoI distribution to get a new population of
-candidate solutions to evaluate. Evaluated solutions are then added to the dataset, the model
-is fitted on this augmented dataset and the process is repeated until one of the stop conditions is met.
+The basic idea of MGSO is similar to global optimization methods by Jones \cite{jones01taxonomy}: Fit a 
+GP model to an initial sample of data and let the model predictive distribution guide the optimization. 
+The key difference is that MGSO does not maximize the PoI used as a criterion to find a single
+solution candidate to evaluate. It rather samples the PoI distribution to get a new population of
+candidate solutions. Solutions are then evaluated, the model is fitted to this augmented 
+dataset and the process is repeated until one of the stop conditions is met.
 
-To abstract from the search space scaling, XYZ works in an internal, linearly transformed coordinate system 
-mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Additionally, rescaling 
-restricts the sampling space to a neighborhood of the optimimum, which enables sampling in situation when 
-the PoI is non-zero only in a very small region.Finally, when the neighborhood of the optimum is sufficiently
-sampled a local search is performed to fine tune the optimum. 
+To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system 
+mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Rescaling restricts the 
+sampling space to a neighborhood of the optimimum, which enables sampling in situation when the PoI is non-zero 
+only in a very small region. Finally, when the neighborhood of the optimum is sufficiently sampled a local search 
+is performed to fine tune the optimum. 
+
+\begin{figure}
+  \centering
+  \epsfig{file=mgso_3func_2D.eps,width=7.5cm}
+
+  \caption{
+    Median of distances to optimum ($f_{\Delta}$) reached using a number of function evaluations
+    for three benchmark functions}
+\end{figure}
 
 Formally, the algorithm performs as follows:
-\begin{enumerate}
+\begin{enumerate}[itemsep=-4pt]
   \item Generate $N_i$ initial samples $\{\xx_0\}$ and evaluate it to get observed values $\{y_0\}$ to obtain
     dataset $\mathcal{S}_0 = \{(\xx_0, y_0)\}$.
   \item Until the stop conditions are met for $i = 1, 2, \dots$ repeat steps 3 -- 8
@@ -265,35 +269,34 @@ Formally, the algorithm performs as follows:
     transform it to $[-1, 1]^D$
   \item Return the best $(\xx, y)$
 \end{enumerate}
-The lower and upper bounds $l_i$ and $u_i$ in each coordinate dimension are found as a bounding box
-of ten nearest samples from the current optimum expanded by 10\%. The initial number of samples $N_i$ and
-population size $N$ are input parameters.
+The bounds $l_i$ and $u_i$ in each coordinate dimension are found as a bounding box of ten nearest samples 
+from the current optimum expanded by 10\%. The initial number of samples $N_i$ and population size $N$ are 
+input parameters.
 
-Sampling is performed using the Gibbs method -- a Markov chain Monte Carlo sampling method [?] 
-enabling us to sample multivariate distributions. In our case we sample candidate solutions from 
-the empirical distribution propotional to the PoI. Samples resulting in ill-conditioned covariance 
-matrices of the GP are rejected.
+Sampling is performed using the Gibbs method \cite{geman1984stochastic} enabling us to sample multivariate 
+distributions. In our case we sample candidate solutions from  the empirical distribution propotional to 
+the PoI. Samples resulting in ill-conditioned covariance matrices of the GP are rejected.
 
 \section{Preliminary results}
 
-The method was tested on three benchmark functions in 2D: Sphere, Rosenbrock function and Rastrigin function [cite]. For
-each function X optimization runs were performed and best function values $f_{\text{best}}$ in each generation
-were recorded. Figure X shows the average target $f_{\Delta} = f_{\text{best}} - f_{\text{opt}}$ reached using
-a given number of function evaluation for each benchmark.
+The method was tested on three benchmark functions in 2D: Sphere, Rosenbrock function and Rastrigin function 
+\cite{molga05functions}. For each function X optimization runs were performed and best function values 
+$f_{\text{best}}$ in each generation were recorded. Figure X shows the median of distanc to optimum 
+$f_{\Delta} = f_{\text{best}} - f_{\text{opt}}$ reached using a given number of function evaluations
+for each benchmark.
 
 % Figure
-
-
-% Meant for expensive black-box optimization, cost dominated by evaluations
-% Comparison with CMA-ES?
-% Figure for 2D
 
 %\end{document}  % This is where a 'short' article might terminate
 
 %ACKNOWLEDGMENTS are optional
 \section{Acknowledgments}
 
-% TODO insert grants
+This work was supported by 
+the Grant Agency of the Charles University (GAUK) 278511/2011,
+the Grant Agency of the Czech Technical University in Prague, grant No. \\ 
+SGS12/196/OHK3/3T/14, 
+and the Czech Science Foundation grant (GA\v{C}R) 201/08/0802.
 
 %
 % The following two commands are all you need in the

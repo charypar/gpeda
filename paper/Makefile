@@ -4,7 +4,7 @@ SRC = gecco_lb_abstract.tex
 BIB = gecco_lb_abstract
 TMP = gecco_lb_abstract.aux gecco_lb_abstract.log gecco_lb_abstract.bbl gecco_lb_abstract.blg
 
-all: display
+all: $(OUT)
 $(OUT): clean
 	pdflatex $(SRC)
 	bibtex $(BIB)
