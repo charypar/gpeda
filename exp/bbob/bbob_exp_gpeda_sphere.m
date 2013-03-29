@@ -9,7 +9,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-exp_id = 'exp_gpeda_rosenbrock_00';
+exp_id = 'exp_gpeda_sphere_00';
 
 bbobpath = '../vendor/bbob';    % should point to fgeneric.m etc.
 datapath = ['output/' exp_id];  % different folder for each experiment
@@ -18,7 +18,7 @@ datapath = ['output/' exp_id];  % different folder for each experiment
   addpath([pathstr filesep bbobpath]);
 % opt.inputFormat = 'row';
 
-opt.algName = 'GPEDA on Rosenbrock';
+opt.algName = 'GPEDA on Sphere';
 opt.comments = '';
 
 maxfunevals = '250 * dim'; % 10*dim is a short test-experiment taking a few minutes 
@@ -28,7 +28,7 @@ maxrestarts = 1e4;        % SET to zero for an entirely deterministic algorithm
 
 dimensions  = [2];    % which dimensions to optimize, subset of [2 3 5 10 20 40];
 
-functions   = [8];    % function ID's to optimize
+functions   = [1];    % function ID's to optimize
 % functions   = benchmarks('FunctionIndices');
 
 instances = [1]; %:5, 31:40];      % [1:5, 31:40]

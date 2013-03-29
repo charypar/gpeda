@@ -9,7 +9,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-exp_id = 'exp_gpeda_rosenbrock_00';
+exp_id = 'exp_gpeda_rosenbrock';
 
 bbobpath = '../vendor/bbob';    % should point to fgeneric.m etc.
 datapath = ['output/' exp_id];  % different folder for each experiment
@@ -35,6 +35,9 @@ instances = [1]; %:5, 31:40];      % [1:5, 31:40]
 
 opt_function = @opt_gpeda_rosenbrock; % function being optimized -- BBOB wrap-around with header
                                 % xbest = function( fun, dim, ftarget, maxfunevals )
+
+% configuration done run the common experiment loop
+run('bbob_exp_common');
 
 
 % runs an entire experiment for benchmarking MY_OPTIMIZER
