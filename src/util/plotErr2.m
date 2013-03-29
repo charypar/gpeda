@@ -29,6 +29,7 @@ set(sf,'EdgeColor','red')
 if nargin == 5
   hold on;
   stem3(xt(:,1), xt(:,2), yt(:, 1), '+');
+  hold off;
 end
 
 

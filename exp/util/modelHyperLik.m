@@ -19,7 +19,7 @@ p1 = M.hyp.cov(1);
 p2 = M.hyp.cov(2);
 scatter(p1, p2, 'ro');
 colorbar;
-title('Likelihood of the model parameters M.hyp.cov(1,2)');
+title('Negative marginal log likelihood of the data given parameters M.hyp.cov(1,2)');
 hold off;
 
 % plot model prediction (copy/paste from gpedaStep2d.m)
@@ -45,9 +45,9 @@ end
 end
 
 
-  nlz = gp(M_long2.hyp, M_long2.inffunc, M_long2.meanfunc, M_long2.covfunc, ...
-    M_long2.likfunc, M_long2.dataset.x, M_long2.dataset.y);
+%  nlz = gp(M_long2.hyp, M_long2.inffunc, M_long2.meanfunc, M_long2.covfunc, ...
+%    M_long2.likfunc, M_long2.dataset.x, M_long2.dataset.y);
 
-  nlz = gp(M.hyp, M.inffunc, M.meanfunc, M.covfunc, M.likfunc, M.dataset.x, M.dataset.y);
+%  nlz = gp(M.hyp, M.inffunc, M.meanfunc, M.covfunc, M.likfunc, M.dataset.x, M.dataset.y);
 
 
