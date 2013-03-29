@@ -54,18 +54,18 @@ for dim = dimensions            % small dimensions first, for CPU reasons
   for ifun = functions          % or benchmarksnoisy(...)
     for iinstance = instances   % 15 function instances
       fgeneric('initialize', ifun, iinstance, datapath, opt); 
+      evals_instance = [];
+      ymin_instance = [];
 
       % independent restarts until maxfunevals or ftarget is reached
       for restarts = 0:maxrestarts
         if restarts > 0  % write additional restarted info
           fgeneric('restart', 'independent restart')
         end
-        [xopt, res] = opt_function('fgeneric', dim, fgeneric('ftarget'), ...
+        [xopt, yopt, evals] = opt_function('fgeneric', dim, fgeneric('ftarget'), ...
                      eval(maxfunevals) - fgeneric('evaluations'));
-        % we don't have this information from CMA-ES :(
-        % results = cat(1,results,res);
-        % ye = [res.deltasY res.evaluations];
-        % y_evals = cat(1,y_evals,ye);
+        evals_instance = [evals_instance; evals];
+        ymin_instance = [ymin_instance; evals];
 
         if fgeneric('fbest') < fgeneric('ftarget') || ...
            fgeneric('evaluations') + eval(minfunevals) > eval(maxfunevals)
@@ -82,6 +82,13 @@ for dim = dimensions            % small dimensions first, for CPU reasons
                    etime(clock, t0)/60/60));
 
       fgeneric('finalize');
+
+      y_evals = cat(1,y_evals, [ymin_instance evals_instance]);
+
+      % This is for GPEDA
+      % results = cat(1,results,res);
+      % ye = [res.deltasY res.evaluations];
+      % y_evals = cat(1,y_evals,ye);
     end
     disp(['      date and time: ' num2str(clock, ' %.0f')]);
   end

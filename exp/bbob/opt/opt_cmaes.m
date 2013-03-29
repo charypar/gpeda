@@ -1,4 +1,4 @@
-function [x, ilaunch] = opt_cmaes(FUN, DIM, ftarget, maxfunevals)
+function [x, ilaunch, nevals] = opt_cmaes(FUN, DIM, ftarget, maxfunevals)
 % minimizes FUN in DIM dimensions by multistarts of fminsearch.
 % ftarget and maxfunevals are additional external termination conditions,
 % where at most 2 * maxfunevals function evaluations are conducted.
@@ -15,12 +15,15 @@ options = struct( ...
   'LBounds', -5, ...
   'UBounds',  5);
 
+nevals = 0;
+
 % refining multistarts
 for ilaunch = 1:1e4; % up to 1e4 times
   % % try fminsearch from Matlab, modified to take usual_delta as arg
   % x = fminsearch_mod(FUN, xstart, usual_delta, options);
   % standard fminsearch()
-  x = cmaes(FUN, xstart, 8/3, options);
+  [x ymin ne] = cmaes(FUN, xstart, 8/3, options);
+  nevals = nevals + ne;
   % terminate if ftarget or maxfunevals reached
   if (feval(FUN, 'fbest') < ftarget || ...
       feval(FUN, 'evaluations') >= maxfunevals)
