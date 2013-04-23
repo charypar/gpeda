@@ -51,6 +51,10 @@
 \usepackage{enumitem}
 \usepackage{rotating}
 \usepackage{xcolor}  % color is sufficient
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage[pdftex]{hyperref}
+\fi
 \pdfpagewidth=8.5in
 \pdfpageheight=11in
 \special{papersize=8.5in,11in}
@@ -185,28 +189,31 @@ solutions are sampled from it. A comprehensive overview of EDAs and related meth
 Another approach is using Gaussian Process (GP) model for optimization fitting a GP regression model to the 
 data and selecting next candidate solution based on the predictive distribution given by the GP. The most 
 promising candidate is added to the dataset and a new model is fitted on the resulting data. A number of candidate 
-selection criteria based on predictive distribution were examined by Jones et al. \cite{jones01taxonomy}, 
-of which the Probability of Improvement (PoI) is of interest for this work.
+selection criteria based on predictive distribution were examined by Jones et~al.~\cite{jones01taxonomy} 
+and recently by Hennig and Schuler~\cite{hennig12entropy}; the Probability of Improvement (PoI) is of interest for this work.
 
 We propose a novel optimization method -- Model Guided Sampling Optimization (MGSO) -- based on a combination of 
 the GP optimization and EDAs. One can either view the novelty as replacing the distribution model in EDA with 
 a probability of improvement of a GP model fitted to all known data, or, from the latter point of view, as, 
-instead of maximizing the PoI to find a single candidate solution, sampling a set of candidate solution 
-proportionally to the PoI. 
+instead of maximizing the PoI to find a single candidate solution, sampling a set of several candidate solutions proportionally to the PoI. 
 
 \section{Gaussian process regression}
 
-Gaussian process regression is a stochastic modeling meth\-od based on a multidimensional Gaussian distribution. 
-GP is a collection of random variables, any finite number of which have a joint Gaussian distribution 
-\cite{rasmussen2006gaussian}, realisations of which are functions. We can condition this distribution on training 
-data and get a posterior distribution of functions which agree with our observations. A prediction in a testing 
-point then gives a Gaussian distribution with some mean and variance. 
+A Gaussian process \cite{rasmussen2006gaussian} is an infinite-dimensional probability density such that
+each linear finite-dimensional restriction is multivariate Gaussian. The
+infinite-dimensional space can be thought of as a space of functions, and the
+finite-dimensional restrictions as values of those functions at locations $\{\xx_i\}_{i=1}^{N}$~\cite{hennig12entropy}.
+% Gaussian process regression is a stochastic modeling meth\-od based on a multidimensional Gaussian distribution. 
+% GP is a collection of random variables, any finite number of which have a joint Gaussian distribution 
+% \cite{rasmussen2006gaussian}, realisations of which are functions. We can condition this distribution on training 
+% data and get a posterior distribution of functions which agree with our observations. 
+A prediction in a testing point then gives a one-dimensional Gaussian distribution with some mean and variance. 
 
 A Gaussian process is completely specified by its mean and covariance functions
 \begin{align*}
   f(\xx) &\sim \mathcal{GP}\left( m(\xx), k(\xx, \xx')\right) \\
   m(\xx) &= \mathbb{E} \left[ f(\xx) \right] \\
-  k(\xx, \xx') &= \mathbb{E} \left[ (f(\xx) - m(\xx))(f(\xx') - m(\xx')) \right] 
+  k(\xx, \xx') &= \mathbb{E} \left[ (f(\xx) - m(\xx))(f(\xx') - m(\xx')) \right].
 \end{align*}
 
 We use a constant mean function and a squared exponential covariance function with
@@ -242,16 +249,17 @@ dataset and the process is repeated until one of the stop conditions is met.
 
 To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system 
 mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Updating it restricts the 
-learning and sampling space to a neighborhood of the optimimum, which enables sampling in the situation when 
+learning and sampling space to a neighborhood of the optimum, which enables sampling in the situation when 
 the PoI is non-zero only in a very small region. Finally, when the neighborhood of the optimum is 
 sufficiently sampled a local search of the GP is performed to fine tune the optimum. 
 
 \begin{figure}
   \centering
-  \epsfig{file=mgso_3func_2D.eps,width=7.5cm}
+  \includegraphics[width=7.5cm]{mgso_3func_2D}
 
   \caption{
-    Medians (of 15 trials) of distances to optimum ($f_{\Delta}$) reached using a number of function evaluations
+    Medians (of 15 trials) of distances to optimum ($f_{\Delta}$) 
+    % reached using a number of function evaluations
     for three benchmark functions}
   \label{fig:test}
 \end{figure}
@@ -262,7 +270,7 @@ Formally, the algorithm performs as follows:
     dataset $\mathcal{S}_0 = \{(\xx_0, y_0)\}$
   \item Until the stop conditions are met for $i = 1, 2, \dots$ repeat steps 3--8
   \item Build a GP model $\mathcal{M}_i$ and fit its hyperparameters $\ttheta$ to the dataset $\mathcal{S}_{i-1}$
-  \item Sample $N$ new candidate solutions $\{\xx_i\}$ based on the PoI distribtion of $\mathcal{M}_i$, 
+  \item Sample $N$ new candidate solutions $\{\xx_i\}$ based on the PoI distribution of $\mathcal{M}_i$, 
     optionally with different targets T as proposed in \cite{jones01taxonomy}
   \item Evaluate $\{\xx_i\}$ to get $\{y_i\}$ 
   \item Augment the dataset obtaining $\mathcal{S}_i = \mathcal{S}_{i-1} \cup \{(\xx_i, y_i)\}$
@@ -276,7 +284,7 @@ from the current optimum expanded by 10\%. The initial number of samples $N_i$ a
 input parameters.
 
 Sampling is performed using the Gibbs method \cite{geman1984stochastic} enabling us to sample multivariate 
-distributions. In our case we sample candidate solutions from  the empirical distribution propotional to 
+distributions. In our case we sample candidate solutions from  the empirical distribution proportional to 
 the PoI. Samples resulting in ill-con\-di\-tion\-ed covariance matrices of the GP are rejected.
 
 \section{Preliminary results}
@@ -295,25 +303,25 @@ for each benchmark.
 \section{Acknowledgments}
 
 This work was supported by 
-the Grant Agency of the Charles University (GAUK) 278511/2011,
-the Grant Agency of the Czech Technical University in Prague, grant No. \\ 
-SGS12/196/OHK3/3T/14, 
-and the Czech Science Foundation grant (GA\v{C}R) 13-17187S\_9948
+the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S\_9948},
+the Grant Agency of the Charles Univ.\,(GAUK) 278511/2011, 
+and
+the Grant Agency of the Czech Technical University in Prague, grant No.~\hbox{SGS12/196/OHK3/3T/14}.
 
 %
 % The following two commands are all you need in the
 % initial runs of your .tex file to
 % produce the bibliography for the citations in your paper.
 \bibliographystyle{abbrv}
-%\bibliography{lb_abstract}  % sigproc.bib is the name of the Bibliography in this case
+% \bibliography{lb_abstract}  % sigproc.bib is the name of the Bibliography in this case
 \begin{thebibliography}{1}
 
 \bibitem{geman1984stochastic}
 S.~Geman and D.~Geman.
 \newblock Stochastic relaxation, gibbs distributions, and the bayesian
   restoration of images.
-\newblock {\em Pattern Analysis and Machine Intelligence, IEEE Transactions
-  on}, (6):721--741, 1984.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  PAMI-6(6):721--741, 1984.
 
 \bibitem{hansen2012fun}
 N.~Hansen, S.~Finck, R.~Ros, and A.~Auger.
@@ -322,21 +330,27 @@ N.~Hansen, S.~Finck, R.~Ros, and A.~Auger.
 \newblock Technical Report RR-6829, INRIA, 2009.
 \newblock Updated February 2010.
 
+\bibitem{hennig12entropy}
+P.~Hennig and C.~J. Schuler.
+\newblock Entropy search for information-efficient global optimization.
+\newblock {\em J. Mach. Learn. Res.}, 13:1809--1837, 2012.
+
 \bibitem{jones01taxonomy}
 D.~Jones.
 \newblock A taxonomy of global optimization methods based on response surfaces.
 \newblock {\em Journal of Global Optimization}, 21:345--383, 2001.
 
 \bibitem{pelikan2006scalable}
-M.~Pelikan and K.~Sastry.
-\newblock {\em Scalable optimization via probabilistic modeling: From
-  algorithms to applications}, volume~33.
-\newblock Springer Verlag, 2006.
+M.~Pelikan, K.~Sastry, and E.~Cant\'{u}-Paz.
+\newblock {\em Scalable Optimization via Probabilistic Modeling}, volume~33 of
+  {\em Studies in Computational Intelligence}.
+\newblock Springer, 2006.
 
 \bibitem{rasmussen2006gaussian}
-C.~E. Rasmussen.
-\newblock Gaussian processes for machine learning.
-\newblock 2006.
+C.~E. Rasmussen and C.~K.~I. Williams.
+\newblock {\em Gaussian Processes for Machine Learning}.
+\newblock MIT Press, 2006.
+
 
 \end{thebibliography}
 % You must have a proper ".bib" file
