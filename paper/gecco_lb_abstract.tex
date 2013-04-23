@@ -116,7 +116,7 @@
 %
 % 1st. author
 \alignauthor
-Lukas Bajer \\
+Luk\'{a}\v{s} Bajer \\
        \affaddr{Faculty of Mathematics and Physics}\\
        \affaddr{Charles University}\\
        \affaddr{Malostranske nam. 25}\\
@@ -134,7 +134,7 @@ Viktor Charypar \\
        \email{charyvik@fjfi.cvut.cz}
 % 3rd. author
 \alignauthor
-Martin Holena \\
+Martin Hole\v{n}a \\
        \affaddr{Institute of Computer Science}\\
        \affaddr{Academy of Sciences of the Czech Republic}\\
        \affaddr{Pod Vodarenskou vezi 2}\\
@@ -196,7 +196,7 @@ proportionally to the PoI.
 
 \section{Gaussian process regression}
 
-Gaussian process regression is a stochastic modeling method based on a multidimensional Gaussian distribution. 
+Gaussian process regression is a stochastic modeling meth\-od based on a multidimensional Gaussian distribution. 
 GP is a collection of random variables, any finite number of which have a joint Gaussian distribution 
 \cite{rasmussen2006gaussian}, realisations of which are functions. We can condition this distribution on training 
 data and get a posterior distribution of functions which agree with our observations. A prediction in a testing 
@@ -214,13 +214,13 @@ automatic relevance determination
 $$
   k_{\mathrm{SE}}(\xx, \xx') = \sigma_f^2 \exp\left( - \frac{1}{2} (\xx - \xx')^\top M (\xx - \xx') \right)
 $$
-where $ M = \eell^{-2}I $ and fit the hyperparameters $\ttheta = \{ \eell, \sigma_f^2 \}$ by 
-maximizing the likelihood $p(\yy | X, \ttheta)$ ($\yy$ are the observations, $X$ is the observation 
-points matrix). $\eell$ is a vector of characteristic lengths of the process in each coordinate dimension
-and $\sigma_f^2$ is a noise level.
+where $ M = \eell^{-2}I $, $\eell$ is a vector of characteristic lengths of the process in each 
+coordinate dimension and $\sigma_f^2$ is a noise level. The hyperparameters $\ttheta = \{ \eell, \sigma_f^2 \}$ 
+are fitted by maximizing the likelihood $p(\yy | X, \ttheta)$ ($\yy$ are the observations, 
+$X$ is the observation points matrix). 
 
-Since the GP gives a Gaussian distribution as prediction, we can think of the distribution's variance
-as confidence of the model in it's prediction and use it to guide optimization. Based on both mean 
+Since the GP gives a one-dimensional Gaussian distribution as prediction, we can think of the distribution's variance
+as confidence of the model in its prediction and use it to guide optimization. Based on both mean 
 and variance of the prediction we can easily get a probability of improvement \cite{jones01taxonomy} over a 
 certain target $T$ as
 $$
@@ -233,25 +233,25 @@ MGSO samples this probability of improvement to get a next set of candidate solu
 
 \section{The MGSO}
 
-The basic idea of MGSO is similar to global optimization methods by Jones \cite{jones01taxonomy}: Fit a 
+The basic idea of MGSO is similar to methods proposed by Jones \cite{jones01taxonomy}: Fit a 
 GP model to an initial sample of data and let the model predictive distribution guide the optimization. 
 The key difference is that MGSO does not maximize the PoI used as a criterion to find a single
 solution candidate to evaluate. It rather samples the PoI distribution to get a new population of
-candidate solutions. Solutions are then evaluated, the model is fitted to this augmented 
+candidate solutions. Those are then evaluated, the model is fitted to this augmented 
 dataset and the process is repeated until one of the stop conditions is met.
 
 To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system 
 mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Updating it restricts the 
-sampling space to a neighborhood of the optimimum, which enables sampling in the situation when the PoI is non-zero 
-only in a very small region. Finally, when the neighborhood of the optimum is sufficiently sampled a local search 
-is performed to fine tune the optimum. 
+learning and sampling space to a neighborhood of the optimimum, which enables sampling in the situation when 
+the PoI is non-zero only in a very small region. Finally, when the neighborhood of the optimum is 
+sufficiently sampled a local search of the GP is performed to fine tune the optimum. 
 
 \begin{figure}
   \centering
   \epsfig{file=mgso_3func_2D.eps,width=7.5cm}
 
   \caption{
-    Median of distances to optimum ($f_{\Delta}$) reached using a number of function evaluations
+    Medians (of 15 trials) of distances to optimum ($f_{\Delta}$) reached using a number of function evaluations
     for three benchmark functions}
   \label{fig:test}
 \end{figure}
@@ -259,11 +259,12 @@ is performed to fine tune the optimum.
 Formally, the algorithm performs as follows:
 \begin{enumerate}[itemsep=-4pt]
   \item Generate $N_i$ initial samples $\{\xx_0\}$ and evaluate it to get observed values $\{y_0\}$ forming a
-    dataset $\mathcal{S}_0 = \{(\xx_0, y_0)\}$.
+    dataset $\mathcal{S}_0 = \{(\xx_0, y_0)\}$
   \item Until the stop conditions are met for $i = 1, 2, \dots$ repeat steps 3--8
   \item Build a GP model $\mathcal{M}_i$ and fit its hyperparameters $\ttheta$ to the dataset $\mathcal{S}_{i-1}$
-  \item Sample $N$ new candidate solutions $\{\xx_i\}$ based on the PoI distribtion of $\mathcal{M}_i$
-  \item Evaluate $\{\xx_i\}$ to get ${y_i}$ 
+  \item Sample $N$ new candidate solutions $\{\xx_i\}$ based on the PoI distribtion of $\mathcal{M}_i$, 
+    optionally with different targets T as proposed in \cite{jones01taxonomy}
+  \item Evaluate $\{\xx_i\}$ to get $\{y_i\}$ 
   \item Augment the dataset obtaining $\mathcal{S}_i = \mathcal{S}_{i-1} \cup \{(\xx_i, y_i)\}$
   \item Store the best $(\xx, y) = \underset{y}{\min} \, \mathcal{S}_i$
   \item If rescale conditions are met, restrict the dataset to $\xx \in \times_{i=1}^D [l_i, u_i]$ and
@@ -284,7 +285,7 @@ As a proof of concept, the method was tested on three benchmark functions from t
 in 2D. For each function, 15 optimization runs were performed and best function values 
 $f_{\text{best}}$ in each generation were recorded. Figure \ref{fig:test} shows the median of distance to optimum 
 $f_{\Delta} = f_{\text{best}} - f_{\text{opt}}$ reached using a given number of function evaluations (limited to 500)
-for each benchmark. 
+for each benchmark.
 
 % Figure
 
