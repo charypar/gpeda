@@ -181,9 +181,9 @@ candidate solutions. We can then either replace the objective function  with thi
 evaluations (a practice known as surrogate modeling) or use the model to guide the selection of candidate 
 solutions. We are concerned with the latter.
 
-Estimation of Distribution Algorithms (EDA) present one such approach. An EDA evolves a population of 
+Estimation of Distribution Algorithms (EDA) use such approach of generating solutions based on a probabilistic model. An EDA evolves a population of 
 candidate solutions in generations, each of which starts with solutions evaluation and selection of the
-promising ones. A probabilistic model of the distribution of the better solutions is then built and new 
+promising ones. A model of the distribution of the better solutions is then built and new 
 solutions are sampled from it. A comprehensive overview of EDAs and related methods can be found in \cite{pelikan2006scalable}.
 
 Another approach is using Gaussian Process (GP) model for optimization fitting a GP regression model to the 
@@ -200,14 +200,14 @@ instead of maximizing the PoI to find a single candidate solution, sampling a se
 \section{Gaussian process regression}
 
 A Gaussian process \cite{rasmussen2006gaussian} is an infinite-dimensional probability density such that
-each linear finite-dimensional restriction is multivariate Gaussian. The
-infinite-dimensional space can be thought of as a space of functions, and the
-finite-dimensional restrictions as values of those functions at locations $\{\xx_i\}_{i=1}^{N}$~\cite{hennig12entropy}.
+each finite-dimensional marginal is a multivariate Gaussian. The
+infinite-dimensional realizations are functions, and the
+realizations of the marginals are values of those functions at locations $\{\xx_i \ | \ \xx_i \in \mathbb{R}^{D}\}_{i=1}^{N}$.
 % Gaussian process regression is a stochastic modeling meth\-od based on a multidimensional Gaussian distribution. 
 % GP is a collection of random variables, any finite number of which have a joint Gaussian distribution 
 % \cite{rasmussen2006gaussian}, realisations of which are functions. We can condition this distribution on training 
 % data and get a posterior distribution of functions which agree with our observations. 
-A prediction in a testing point then gives a one-dimensional Gaussian distribution with some mean and variance. 
+A~prediction in a testing point then gives a one-dimensional Gaussian distribution.
 
 A Gaussian process is completely specified by its mean and covariance functions
 \begin{align*}
@@ -224,17 +224,16 @@ $$
 where $ M = \eell^{-2}I $, $\eell$ is a vector of characteristic lengths of the process in each 
 coordinate dimension and $\sigma_f^2$ is a noise level. The hyperparameters $\ttheta = \{ \eell, \sigma_f^2 \}$ 
 are fitted by maximizing the likelihood $p(\yy | X, \ttheta)$ ($\yy$ are the observations, 
-$X$ is the observation points matrix). 
+$X$ is the input points matrix). 
 
 Since the GP gives a one-dimensional Gaussian distribution as prediction, we can think of the distribution's variance
 as confidence of the model in its prediction and use it to guide optimization. Based on both mean 
-and variance of the prediction we can easily get a probability of improvement \cite{jones01taxonomy} over a 
+and standard error of the prediction, we can easily get a probability of improvement \cite{jones01taxonomy} over a 
 certain target $T$ as
 $$
- \mathrm{PoI} = \mathrm{\Phi}\left( \frac{T - \bar{f_*}}{\mathbb{V}[f_*]} \right)
+ \mathrm{PoI} = \mathrm{\Phi}\left( \frac{T - \mu_*}{\sigma_*} \right)
 $$
-where $\Phi$ is the Gaussian cumulative distribution function, $f_*$ is the model prediction (a random
-variable), $\bar{f_*}$ is its mean and $\mathbb{V}[f_*]$ is its variance.
+where $\mu_*$ is mean and $\sigma_*$ standard error of the model prediction (both returned by the GP) and $\Phi$ is a standard $\mathcal{N}(0,1)$ cumulative distribution function.
 
 MGSO samples this probability of improvement to get a next set of candidate solutions.
 
@@ -245,13 +244,13 @@ GP model to an initial sample of data and let the model predictive distribution 
 The key difference is that MGSO does not maximize the PoI used as a criterion to find a single
 solution candidate to evaluate. It rather samples the PoI distribution to get a new population of
 candidate solutions. Those are then evaluated, the model is fitted to this augmented 
-dataset and the process is repeated until one of the stop conditions is met.
+dataset and the process is repeated until a stopping condition is met.
 
 To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system 
 mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Updating it restricts the 
 learning and sampling space to a neighborhood of the optimum, which enables sampling in the situation when 
 the PoI is non-zero only in a very small region. Finally, when the neighborhood of the optimum is 
-sufficiently sampled a local search of the GP is performed to fine tune the optimum. 
+sufficiently sampled, a local search of the GP is performed to fine tune the optimum. 
 
 \begin{figure}
   \centering
@@ -264,27 +263,27 @@ sufficiently sampled a local search of the GP is performed to fine tune the opti
   \label{fig:test}
 \end{figure}
 
-Formally, the algorithm performs as follows:
+Formally, the algorithm proceeds as follows:
 \begin{enumerate}[itemsep=-4pt]
-  \item Generate $N_i$ initial samples $\{\xx_0\}$ and evaluate it to get observed values $\{y_0\}$ forming a
+  \item Generate $N_i$ initial samples $\{\xx_0\}$ and evaluate them to get observed values $\{y_0\}$ forming a
     dataset $\mathcal{S}_0 = \{(\xx_0, y_0)\}$
-  \item Until the stop conditions are met for $i = 1, 2, \dots$ repeat steps 3--8
+  \item Until a stopping condition is met,  for $i = 1, 2, \dots$ repeat steps 3--8
   \item Build a GP model $\mathcal{M}_i$ and fit its hyperparameters $\ttheta$ to the dataset $\mathcal{S}_{i-1}$
   \item Sample $N$ new candidate solutions $\{\xx_i\}$ based on the PoI distribution of $\mathcal{M}_i$, 
     optionally with different targets T as proposed in \cite{jones01taxonomy}
   \item Evaluate $\{\xx_i\}$ to get $\{y_i\}$ 
   \item Augment the dataset obtaining $\mathcal{S}_i = \mathcal{S}_{i-1} \cup \{(\xx_i, y_i)\}$
-  \item Store the best $(\xx, y) = \underset{y}{\min} \, \mathcal{S}_i$
+  \item Store the best $(\tilde{\xx}, \tilde{y}) \in \mathcal{S}_i : \tilde{y} \leq y_k \, \forall (\xx_k, y_k) \in \mathcal{S}_i$  % = \underset{y}{\min} \, \mathcal{S}_i$
   \item If rescale conditions are met, restrict the dataset to $\xx \in \times_{i=1}^D [l_i, u_i]$ and
     transform it to $[-1, 1]^D$
-  \item Return the best $(\xx, y)$
+  \item Return the best $(\tilde{\xx}, \tilde{y})$
 \end{enumerate}
 The bounds $l_i$ and $u_i$ in each coordinate dimension are found as a bounding box of ten nearest samples 
 from the current optimum expanded by 10\%. The initial number of samples $N_i$ and population size $N$ are 
 input parameters.
 
 Sampling is performed using the Gibbs method \cite{geman1984stochastic} enabling us to sample multivariate 
-distributions. In our case we sample candidate solutions from  the empirical distribution proportional to 
+distributions. In our case, we sample candidate solutions from  the empirical distribution proportional to 
 the PoI. Samples resulting in ill-con\-di\-tion\-ed covariance matrices of the GP are rejected.
 
 \section{Preliminary results}
@@ -303,8 +302,8 @@ for each benchmark.
 \section{Acknowledgments}
 
 This work was supported by 
-the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S\_9948},
-the Grant Agency of the Charles Univ.\,(GAUK) 278511/2011, 
+the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S},
+the Grant Agency of the Charles Univ. (GAUK) \hbox{278511/2011} grant, 
 and
 the Grant Agency of the Czech Technical University in Prague, grant No.~\hbox{SGS12/196/OHK3/3T/14}.
 
@@ -318,7 +317,7 @@ the Grant Agency of the Czech Technical University in Prague, grant No.~\hbox{SG
 
 \bibitem{geman1984stochastic}
 S.~Geman and D.~Geman.
-\newblock Stochastic relaxation, gibbs distributions, and the bayesian
+\newblock Stochastic relaxation, {G}ibbs distributions, and the {B}ayesian
   restoration of images.
 \newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
   PAMI-6(6):721--741, 1984.
@@ -351,7 +350,6 @@ C.~E. Rasmussen and C.~K.~I. Williams.
 \newblock {\em Gaussian Processes for Machine Learning}.
 \newblock MIT Press, 2006.
 
-
 \end{thebibliography}
 % You must have a proper ".bib" file
 %  and remember to run:
@@ -363,3 +361,4 @@ C.~E. Rasmussen and C.~K.~I. Williams.
 %APPENDICES are optional
 %\balancecolumns
 \end{document}
+
