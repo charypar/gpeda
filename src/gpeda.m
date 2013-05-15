@@ -48,10 +48,10 @@ run.attempts = {};
 run.notSPDCovarianceErrors = [];
 
 att = 1;
-run.attempts{att} = initAttempt(lb, ub, eval_fcn, options);
+run.attempts{att} = initAttempt(lb, ub, eval_fcn, doe, options);
 pop = [];
 
-disp(sprintf('\n ==== Starting new optimization run ==== \n'));
+fprintf('\n ==== Starting new optimization run ==== \n');
 doRestart = 0; doRescale = 0;
 
 while ~evalconds(stop, run, options.stop) % until one of the stop conditions occurs
@@ -61,10 +61,10 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   M = run.attempts{att}.model;
   pop = []; tolXDistRatio = 0;
 
-  disp(sprintf('\n-- Attempt %d, iteration %d --', att, it));
+  fprintf('\n-- Attempt %d, iteration %d --', att, it);
 
   % train model
-  disp(['Training model...']);
+  disp('Training model...'  );
   [M_try nTrainErrors] = modelTrain(M, ds.x, ds.y);
   run.notSPDCovarianceErrors = [run.notSPDCovarianceErrors nTrainErrors];
 
@@ -88,7 +88,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     try
       [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
     catch err
-      [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRestart, doRescale);
+      [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRestart, doRescale, size(pop));
       
       [best_x_model best_y_model exflag] = findModelMinimum(M, run.attempts{att});
       disp(['Continuous model minimum: f(' num2str(best_x_model) ') = ' ...
@@ -121,7 +121,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     run.attempts{att} = updateAttempt(run.attempts{att}, pop, y, m, s2);
 
     % add new samples to the dataset for next iteration
-    disp(['Augmenting dataset']);
+    disp('Augmenting dataset');
     run.attempts{att}.dataset.x = [ds.x; pop];
     run.attempts{att}.dataset.y = [ds.y; y];
 
@@ -134,7 +134,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   % if one of the restart conditions occurs
   if doRestart || (isfield(options, 'restart') && evalconds(restart, run, options.restart))
-    disp(['Restart conditions met, starting over...']);
+    disp('Restart conditions met, starting over...');
     run.attempt = run.attempt + 1;
     att = run.attempt;
   
@@ -184,7 +184,7 @@ end
 
 % Support functions
 
-function attempt = initAttempt(re_lb, re_ub, eval_fcn, options)
+function attempt = initAttempt(re_lb, re_ub, eval_fcn, doe_fcn, options)
   D = length(re_lb);
 
   if(isfield(options, 'model'))
@@ -198,7 +198,7 @@ function attempt = initAttempt(re_lb, re_ub, eval_fcn, options)
   attempt.shift = -1 - (re_lb ./ attempt.scale);
 
   % generate initial dataset
-  attempt.dataset.x = feval(doe, D, options.doe);
+  attempt.dataset.x = feval(doe_fcn, D, options.doe);
 
   dsx = attempt.dataset.x;
   dsx = transform(dsx, attempt.scale, attempt.shift);
@@ -332,7 +332,7 @@ function [x y] = filterDataset(ds, lob, upb)
 end
 
 
-function [pop fval exflag] = findModelMinimum(model, thisAttempt)
+function [pop fval exflag] = findModelMinimum(model, thisAttempt, dim)
   gp_predict = @(x_gp) modelPredict(model, x_gp);
   % % this is GADS Toolbox, which we dont have license for :(
   %{
@@ -366,21 +366,21 @@ function [doRestart, doRescale] = checkNumberOfSPDCovarianceErrors(notSPDCovaria
   end
 end
 
-function [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRestart, doRescale)
+function [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRestart, doRescale, pop_size)
 % indentifies different errors comming from sample()
 % prints a warning message and decides whether rescale or restart should happen
   disp(['Sample error: ' err.identifier]);
   disp(getReport(err));
   if strcmp(err.identifier, 'sampleGibbs:NarrowDataset')
     doRestart = 1;
-    fprintf('  NarrowDataset: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+    fprintf('  NarrowDataset: size(pop) = %s; tolXDistRatio = %f\n', num2str(pop_size), tolXDistRatio);
   end
   if strcmp(err.identifier, 'sampleGibbs:CovarianceMatrixNotSPD')
     doRestart = 1; fprintf(err.message);
   end
   if strcmp(err.identifier, 'sampleGibbs:NarrowProbability')
     doRescale = 1;
-    fprintf('  NarrowProbability: size(pop) = %s; tolXDistRatio = %f\n', num2str(size(pop)), tolXDistRatio);
+    fprintf('  NarrowProbability: size(pop) = %s; tolXDistRatio = %f\n', num2str(pop_size), tolXDistRatio);
   end
   if strcmp(err.identifier, 'sampleGibbs:NoProbability')
     doRestart = 1;
@@ -389,7 +389,7 @@ function [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRest
 end
 
 
-function thisAttempt = updateAttempt(thisAttempt, pop, y, m, s2);
+function thisAttempt = updateAttempt(thisAttempt, pop_, y, m, s2)
 % update statistics of the number of original evaluations
 
   thisAttempt.evaluations = thisAttempt.evaluations + length(y);
@@ -401,8 +401,8 @@ function thisAttempt = updateAttempt(thisAttempt, pop, y, m, s2);
   if size(thisAttempt.bests.yms2, 1) < 1 || ymin < thisAttempt.bests.yms2(end, 1)
     % record improved solution
     ev = thisAttempt.evaluations;
-    fprintf('Best solution improved to f(%s) = %s. (used %d evaluations in this attempt)\n', num2str(pop(i,:)), num2str(ymin), ev);
-    thisAttempt.bests.x(end + 1, :) = pop(i, :);
+    fprintf('Best solution improved to f(%s) = %s. (used %d evaluations in this attempt)\n', num2str(pop_(i,:)), num2str(ymin), ev);
+    thisAttempt.bests.x(end + 1, :) = pop_(i, :);
     thisAttempt.bests.yms2(end + 1, :) = [y(i) m(i) s2(i)];
   else
     disp(['Best solution did not improve, still at ' num2str(thisAttempt.bests.yms2(end, :))]);
