@@ -1,8 +1,5 @@
 function [xbest result] = opt_gpeda_rosenbrock(FUN, DIM, ftarget, maxfunevals)
 % MY_OPTIMIZER(FUN, DIM, ftarget, maxfunevals)
-% samples new points uniformly randomly in [-5,5]^DIM
-% and evaluates them on FUN until ftarget of maxfunevals
-% is reached, or until 1e8 * DIM fevals are conducted. 
 
 % cov_function = 'covSEard';
 cov_function = 'covSEiso';
