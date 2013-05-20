@@ -75,7 +75,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
       M = M_try;
     end
 
-    [best_x_model best_y_model] = findModelMinimum(M, run.attempts{att});
+    [best_x_model best_y_model] = findModelMinimum(M, run.attempts{att}, dim);
     pop = best_x_model;
     % TODO: generate several solutions, not just one
 
@@ -90,7 +90,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     catch err
       [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRestart, doRescale, size(pop));
       
-      [best_x_model best_y_model exflag] = findModelMinimum(M, run.attempts{att});
+      [best_x_model best_y_model exflag] = findModelMinimum(M, run.attempts{att}, dim);
       disp(['Continuous model minimum: f(' num2str(best_x_model) ') = ' ...
         num2str(best_y_model) ', exflag = ' num2str(exflag)]);
       pop = best_x_model;
@@ -139,7 +139,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     att = run.attempt;
   
     % initialize new attempt
-    run.attempts{att} = initAttempt(lb, ub, eval_fcn, options);
+    run.attempts{att} = initAttempt(lb, ub, eval_fcn, doe, options);
     run.notSPDCovarianceErrors = [];
     doRestart = 0;
   elseif doRescale || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
@@ -349,7 +349,8 @@ function [pop fval exflag] = findModelMinimum(model, thisAttempt, dim)
     'Tolfun', 1e-10, ...
     'TolX', 1e-10, ...
     'Display', 'off');
-  [pop fval exflag] = fminsearch(gp_predict, thisAttempt.bests.x(end,:), fminoptions);
+  [pop fval exflag output] = fminsearch(gp_predict, thisAttempt.bests.x(end,:), fminoptions);
+  disp(['  fminsearch(): ' num2str(output.funcCount) ' evaluations.']);
 end
 
 function [doRestart, doRescale] = checkNumberOfSPDCovarianceErrors(notSPDCovarianceErrors, maxTrainErrors)
