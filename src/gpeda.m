@@ -34,7 +34,9 @@ function [xopt varargout] = gpeda(options, eval_fcn, doe, sampler, rescale, rest
 % run  - struct containing various statistics about the whole optimization run, including the dataset,
 %   individual populations and predictions
 
-maxTrainErrors = 8;
+warning('off', 'GP:InferenceFailed');
+
+maxTrainErrors = 20;
 % FIXME: add it to options!
 
 lb = options.lowerBound(:)';

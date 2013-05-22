@@ -1,20 +1,61 @@
 function [s tolXDistRatio] = sampleSlice(M, dim, nsamples, attempt, spar)
 % Slice sampler -- very testing version!
 
-startX = 2 * rand(1,dim) - 1;
+if (~isfield(spar, 'minTolX'))
+  spar.minTolX = 0.002; % the minimum distance in X's to any point 
+                        % in the dataset, lower produces numerical
+                        % instability (not posit. definite covariance
+                        % matrices in the GP model)
+end
 
+bestX = attempt.bests.x(end,:);
 currBestY = attempt.bests.yms2(end,1);
 currWorstY = min(attempt.dataset.y);
 tolXDistRatio = 0;
 
 thresholds = [0 0.001 0.30 1.0 3.0];
-thresholds = flipdim(thresholds, 2);
+% thresholds = flipdim(thresholds, 2);
 targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 
-i = 1;
-while (i <= length(thresholds))
-  density = @(xSpace) modelGetPOI(M, xSpace, targets(i));
+% check if covariance matrix is positive definite
+lx = size(attempt.dataset.x,1);
+spd = isCovarianceSPD(M, attempt.dataset.x);
+if (spd < lx)
+  exception = MException('sampleGibbs:CovarianceMatrixNotSPD', ...
+              ['The matrix is not positive definite: p (from LL decomp) = ' num2str(lx - spd)]);
+  tolXDistRatio = 1;
+  throw(exception);
+end
 
-  s = slicesample(startX, nsamples, 'pdf', density, 'burnin', 100, 'thin', 10);
+errCode = -1; i = 1;
+s = [];
+nTolXErrors = 0;
+while (errCode ~= 0 && i <= length(thresholds))
+  % seems that only function proportional to PDF is sufficient
+  logdensity = @(xSpace) log(modelGetPOI(M, xSpace, targets(i)));
+
+  % start at the current best point -- there sould be at least some PoI > 0
+  startX = bestX;
+  [s_, neval, errCode, nTolXErrors_] = myslicesample(startX, nsamples, 'logpdf', logdensity, 'burnin', 100, 'thin', 10, 'width', 0.5*ones(1,dim), 'dataset', attempt.dataset.x, 'minTolX', 0.002, 'model', M);
+
+  if (size(s_,1) > size(s,1))
+    s = s_;
+    nTolXErrors = nTolXErrors_;
+  end
+
+  switch (errCode)
+  case 1
+    disp(['sampleSlice(): There is no probability of improvement with threshold ' num2str(thresholds(i))]);
+  case 2
+    disp(['sampleSlice(): Could not sample enough individuals far enough between each other with threshold ' num2str(thresholds(i))]);
+  end
   i = i + 1;
 end
+
+if (nTolXErrors > 0)
+  disp(['sampleGibbs(): Note: sampling in narrow region: nTolXErrors == ' num2str(nTolXErrors)]);
+  tolXDistRatio = nTolXErrors/nsamples;
+else
+  tolXDistRatio = 0;
+end
+

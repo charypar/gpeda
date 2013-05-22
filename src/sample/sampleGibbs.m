@@ -228,6 +228,7 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
         end
         F_step = cumsum(poi_density);             % empirical step-like cumsum; last item = integral
         F_step = F_step ./ F_step(end);           % calculate empirical CDF by dividing by the integral
+        F_step = F_step(:);
         F = ([0; F_step(1:end-1)] + F_step)/2;    % midpoints CDF
         % augment the midpoints CDF on bounds to start at 0 and end at 1
         %   copy slope of this parts from the first/last part of the midpoint CDF
@@ -308,34 +309,6 @@ end
 
 end % subfunction gibbsSampler()
 
-
-function d = distToDataset(x, dataset)
-% distToDataset - computes vector of distances between *x* and *dataset*
-  xs = repmat(x, size(dataset,1), 1);
-  ds = (xs - dataset);
-  d  = sqrt(sum(ds.^2,2));
-end % subfunction distToDataset()
-
-function res = isCovarianceSPD(M, x_, varargin)
-% checks if covariance matrix is positive definite
-  lenx = length(x_);
-  K = feval(M.covfunc, M.hyp.cov, x_);
-  sn2 = exp(2*M.hyp.lik);
-  % [L p] = chol(eye(lenx)+K);
-  [L p] = chol(K/sn2+eye(lenx));
-
-  if ((nargin > 2) && strcmpi(varargin{1}, 'bool'))
-    res = (p == 0);
-  else
-    res = (lenx - p);
-  end
-
-  % L = chol(eye(length(x_))+sW*sW'.*K);
-  %
-  % sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
-  % L = chol(K/sn2+eye(n) + 0.0001*eye(n));               % Cholesky factor of covariance with noise
-  % alpha = solve_chol(L,y-m)/sn2;
-end
 
 function [maxPOIX, maxPOIY] = getMax(f, dim, ycond)
   % evaluate function on a grid and start a fminsearch() from such a point
