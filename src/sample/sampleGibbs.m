@@ -77,12 +77,14 @@ while (errCode ~= 0 && i <= length(thresholds))
   % maxPOIX = [];
   % [maxPOIX, maxPOIY] = getMax(density, dim, ycond);
   
-  % evaluate POI on a grid and access point with the highest POI
-  % TODO: try running sampler for each such a region, not just maxPOI
-  xyz = gridnd(-1*ones(1,dim), ones(1,dim), 20);
-  xyzPOI = density(xyz);
-  [maxPOIY ind] = max(xyzPOI);
-  startX = xyz(ind,:);
+  % % evaluate POI on a grid and access point with the highest POI
+  % % TODO: try running sampler for each such a region, not just maxPOI
+  % xyz = gridnd(-1*ones(1,dim), ones(1,dim), 20);
+  % xyzPOI = density(xyz);
+  % [maxPOIY ind] = max(xyzPOI);
+  % startX = xyz(ind,:);
+
+  startX = bestX;
 
   if (maxPOIY > 0)
     [s_, errCode, nTolXErrors_] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x, spar); % , debugArgs);

@@ -54,7 +54,8 @@ if (strcmpi(cov_function, 'covSEard'))
   opts.model = modelInit(DIM, hyp, mean, cov);
 elseif (strcmpi(cov_function, 'covSEiso'))
   % rastrigin
-  hyp.cov = [-2.7 2.6];
+  % hyp.cov = [-2.7 2.6];
+  hyp.cov = [-3.5 2.6];
   % % rosenbrock
   % hyp.cov = [0.1 11];
   % % sphere
@@ -71,7 +72,7 @@ elseif (strcmpi(cov_function, 'covSEiso'))
   opts.model = modelInit(DIM, hyp, mean, cov);
 end
 
-[xbest run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, ...
+[xbest run] = gpeda(opts, @evalHandle, @doeRandom, @sampleSlice, ...
               rescaleConds, restartConds, stopConds, gpedaStep2d_ftarget);
 
 if (nargout > 1)
