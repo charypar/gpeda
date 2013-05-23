@@ -15,7 +15,7 @@ shift = run.attempts{att}.shift;
 lb = run.options.lowerBound;
 ub = run.options.upperBound;
 
-assert(max(size(lb)) == 2, 'gpedaStep2d(): Input dimensions is not 2D.');
+% assert(max(size(lb)) == 2, 'gpedaStep2d(): Input dimensions is not 2D.');
 
 if (nargin > 1)
   disp(['Best so-far: ' num2str(best.yms2(end,1)) '   delta = ' num2str(best.yms2(end,1)-varargin{1})]);
@@ -23,6 +23,11 @@ end
 
 gridSize = 101;
 [xy_column xx yy] = grid2d([-1 -1], [1 1], gridSize);
+
+dim = size(lb,2);
+if (dim > 2)
+  xy_column = [xy_column zeros(size(xy_column,1),dim-2)];
+end
 
 xy_original = transform(xy_column, scale, shift);
 
@@ -45,7 +50,7 @@ title(t);
 subplot(1,2,1);
 hold off;
 dsx = transform(ds.x, scale, shift);
-plotErr2(xy_original, m, s2, dsx, ds.y);
+plotErr2(xy_original(:,1:2), m, s2, dsx(:,1:2), ds.y);
 title('Model and dataset');
 
 % hold on;
