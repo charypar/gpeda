@@ -201,7 +201,7 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
   end
 end
 
-neval = neval/(nsamples*thin+burnin); % averaged number of evaluations
+% neval = neval/(nsamples*thin+burnin); % averaged number of evaluations
 
 if (nSampled < (nsamples));
   rnd((nSampled+1):end,:) = [];

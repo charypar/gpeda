@@ -1,4 +1,4 @@
-function [s tolXDistRatio] = sampleSlice(M, dim, nsamples, attempt, spar)
+function [s tolXDistRatio neval] = sampleSlice(M, dim, nsamples, attempt, spar)
 % Slice sampler -- very testing version!
 
 if (~isfield(spar, 'minTolX'))
@@ -30,13 +30,15 @@ end
 errCode = -1; i = 1;
 s = [];
 nTolXErrors = 0;
+neval = 0;
 while (errCode ~= 0 && i <= length(thresholds))
   % seems that only function proportional to PDF is sufficient
   logdensity = @(xSpace) log(modelGetPOI(M, xSpace, targets(i)));
 
   % start at the current best point -- there sould be at least some PoI > 0
   startX = bestX;
-  [s_, neval, errCode, nTolXErrors_] = myslicesample(startX, nsamples, 'logpdf', logdensity, 'burnin', 100, 'thin', 10, 'width', 0.5*ones(1,dim), 'dataset', attempt.dataset.x, 'minTolX', 0.002, 'model', M);
+  [s_, neval_, errCode, nTolXErrors_] = myslicesample(startX, nsamples, 'logpdf', logdensity, 'burnin', 100, 'thin', 10, 'width', 1*ones(1,dim), 'dataset', attempt.dataset.x, 'minTolX', 0.002, 'model', M);
+  neval = neval + neval_;
 
   if (size(s_,1) > size(s,1))
     s = s_;

@@ -1,4 +1,4 @@
-function [s tolXDistRatio] = sampleGibbs(M, dim, nsamples, attempt, spar)
+function [s tolXDistRatio neval] = sampleGibbs(M, dim, nsamples, attempt, spar)
 % Gibbs MCMC sampler based on Probability of improvement
 %
 % M             GP model
@@ -37,6 +37,7 @@ end
 errCode = -1; i = 1;
 s = [];
 nTolXErrors = 0;
+neval = 0;
 while (errCode ~= 0 && i <= length(thresholds))
   density = @(xSpace) modelGetPOI(M, xSpace, targets(i));
 
@@ -81,13 +82,16 @@ while (errCode ~= 0 && i <= length(thresholds))
   % % TODO: try running sampler for each such a region, not just maxPOI
   % xyz = gridnd(-1*ones(1,dim), ones(1,dim), 20);
   % xyzPOI = density(xyz);
+  % neval = neval + 1 + 0.01 * size(xyz,1);
   % [maxPOIY ind] = max(xyzPOI);
   % startX = xyz(ind,:);
 
   startX = bestX;
 
-  if (maxPOIY > 0)
-    [s_, errCode, nTolXErrors_] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x, spar); % , debugArgs);
+  % if (maxPOIY > 0)
+  if (density(startX) > 0)
+    [s_, neval_, errCode, nTolXErrors_] = gibbsSampler(density, dim, nsamples, startX, attempt.dataset.x, spar); % , debugArgs);
+    neval = neval + neval_;
 
     if (size(s_,1) > size(s,1))
       s = s_;
@@ -137,7 +141,7 @@ if (isempty(s))
   end
 end
 
-function [s, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, dataset, spar, debugArgs)
+function [s, neval, errCode, nTolXErrors] = gibbsSampler(density, dim, nsamples, startX, dataset, spar, debugArgs)
 % Gibbs MCMC sampler itself
 %
 % M             GP model
@@ -179,6 +183,7 @@ highestPOIX = zeros(1,dim);
 % - leave one sample for the biggest PoI found by this run
 nSampled = 0;
 nTolXErrors = 0;
+neval = 0;
 while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
   for j = 1:thin
     % take the variables in random order
@@ -196,6 +201,8 @@ while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
         xSpace = repmat(x,length(xGrid),1);
         xSpace(:,k) = xGrid;
         poi_density = density(xSpace);
+        % this +1 instead of +size(xSpace,1) is due to batch evaluation of density in gp() call
+        neval = neval + 1 + 0.01*size(xSpace,1);
         empIntegral = sum(poi_density);
         
         % save maximal POI found so far
