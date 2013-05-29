@@ -164,8 +164,8 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     if (min(abs([nlb nub])) > .8)
       % cancel rescale, we have new limits [-1 -1 ... -1] / [1 1 ... 1]
       disp('Rescaling conditions DID NOT met, limits [-1..-1] / [1..1]'); 
-      disp('Do restart. There is something wrong in the dataset.'); 
-      doRestart = 1;
+      % disp('Do restart. There is something wrong in the dataset.'); 
+      % doRestart = 1;
     elseif (run.attempts{att}.iterations > 1)
       disp('Rescaling conditions met, zooming in...');
       run.attempts{att}.rescaleFlag = 1;
@@ -363,8 +363,8 @@ function [pop fval exflag] = findModelMinimum(model, thisAttempt, dim)
   %}
 
   % this is Matlab core fminsearch() implementation
-  fminoptions = optimset('MaxFunEvals', min(1e8*dim), ...
-    'MaxIter', 1000*dim, ...
+  fminoptions = optimset('MaxFunEvals', min(1000*dim), ...
+    'MaxIter', 200*dim, ...
     'Tolfun', 1e-10, ...
     'TolX', 1e-10, ...
     'Display', 'off');

@@ -13,7 +13,8 @@ currBestY = attempt.bests.yms2(end,1);
 currWorstY = min(attempt.dataset.y);
 tolXDistRatio = 0;
 
-thresholds = [0 0.001 0.30 1.0 3.0];
+thresholds = [0 0.001 1.0];
+% thresholds = [0 0.001 0.30 1.0 3.0];
 % thresholds = flipdim(thresholds, 2);
 targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 

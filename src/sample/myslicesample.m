@@ -79,7 +79,7 @@ end;
 initial = initial(:)';
 % parse the information in the name/value pairs 
 pnames = {'pdf' ,'logpdf', 'width','burnin','thin','dataset','minTolX', 'maxTolXErrors', 'model'};
-dflts =  {[] [] 10 0 1, [], 0.002, 2*nsamples, []};
+dflts =  {[] [] 10 0 1, [], 0.002, nsamples, []};
 [pdf,logpdf,width,burnin,thin,dataset,minTolX, maxTolXErrors, M] = ...
        internal.stats.parseArgs(pnames, dflts, varargin{:});
  

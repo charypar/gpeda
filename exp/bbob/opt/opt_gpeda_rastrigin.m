@@ -33,7 +33,7 @@ opts.rescale = {
 % Restart Conditions
 restartConds = {@stopStallGen};
 opts.restart = {
-  struct('generations', 5);
+  struct('generations', 6);
 };
 
 % Stop Conditions
