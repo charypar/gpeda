@@ -89,6 +89,20 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     disp(['Sampling population ' int2str(it) '...']);
     try
       [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
+      % find continuous minimum of the GP and add it or replace the nearest 
+      % individual if covariance matrix is still SPD
+      [best_x_model] = findModelMinimum(M, run.attempts{att}, dim);
+      if (isCovarianceSPD(M, [pop; best_x_model], 'bool'))
+        disp('Augmenting dataset with model''s continuous minimum.');
+        if (size(pop,1) == options.popSize)
+          [minx mini] = min(distToDataset(best_x_model, pop));
+          new_pop_i = [1:(mini-1) (mini+1):size(pop,1)];
+          pop = [pop(new_pop_i,:); best_x_model];
+        else
+          pop = [pop; best_x_model];
+        end
+      end
+
     catch err
       [doRestart, doRescale] = dispatchSampleError(err, tolXDistRatio, doRestart, doRescale, size(pop));
       
@@ -298,9 +312,12 @@ function [lb ub] = computeRescaleLimits(attempt, dim)
   dist = sqrt(sum((dsxopt - dsx).^2, 2));
   [~, ind] = sort(dist);
 
-  % take 10*D closest points
-  if(length(ind) > 10*dim)
-    besti = ind(1:10*dim);
+  nNearestPoints = 15*dim;
+
+  % take nNearestPoints closest points
+  % TODO: make nNearestPoints a parameter
+  if(length(ind) > nNearestPoints)
+    besti = ind(1:nNearestPoints);
   else
     warning('Rescaling did not discard any points');
     besti = ind;

@@ -64,7 +64,7 @@ elseif (strcmpi(cov_function, 'covSEiso'))
   opts.model = modelInit(DIM, hyp, mean, cov);
 end
 
-[xbest run] = gpeda(opts, @evalHandle, @doeRandom, @sampleGibbs, ...
+[xbest run] = gpeda(opts, @evalHandle, @doeRandom, @sampleSlice, ...
               rescaleConds, restartConds, stopConds, gpedaStep2d_ftarget);
 
 if (nargout > 1)

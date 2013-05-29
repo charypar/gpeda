@@ -55,7 +55,7 @@ while (errCode ~= 0 && i <= length(thresholds))
 end
 
 if (nTolXErrors > 0)
-  disp(['sampleGibbs(): Note: sampling in narrow region: nTolXErrors == ' num2str(nTolXErrors)]);
+  disp(['sampleSlice(): Note: sampling in narrow region: nTolXErrors == ' num2str(nTolXErrors)]);
   tolXDistRatio = nTolXErrors/nsamples;
 else
   tolXDistRatio = 0;

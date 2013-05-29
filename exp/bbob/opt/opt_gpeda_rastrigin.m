@@ -55,14 +55,15 @@ if (strcmpi(cov_function, 'covSEard'))
 elseif (strcmpi(cov_function, 'covSEiso'))
   % rastrigin
   % hyp.cov = [-2.7 2.6];
-  hyp.cov = [-3.5 2.6];
+  hyp.cov = [-2 10];
   % % rosenbrock
   % hyp.cov = [0.1 11];
   % % sphere
   % hyp.cov = [2.5 8.5];
   hyp.mean = [0];
   % rastrigin
-  hyp.lik = -1.1;
+  % hyp.lik = -1.1;
+  hyp.lik = -3;
   % % rosenbrock
   % hyp.lik = -4;
   % % sphere
