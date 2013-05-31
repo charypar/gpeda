@@ -1,9 +1,15 @@
-function [M medians evals] = completeRunStat(y_evals)
-  evals = 1:500;
+function [M medians evals] = completeRunStat(y_evals, varargin)
+  if (nargin > 1)
+    N = varargin{1};
+  else
+    N = 500;
+  end
 
-  M = zeros(500,length(y_evals));
+  evals = 1:N;
+
+  M = zeros(N,length(y_evals));
   for i = 1:length(y_evals)
-    M(:,i) = runStat(y_evals{i});
+    M(:,i) = runStat(y_evals{i}, N);
   end
   medians = median(M, 2);
 end

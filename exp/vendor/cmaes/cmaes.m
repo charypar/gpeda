@@ -3,7 +3,8 @@ function [xmin, ...      % minimum search point of last iteration
 	  counteval, ... % number of function evaluations done
 	  stopflag, ...  % stop criterion reached
 	  out, ...     % struct with various histories and solutions
-	  bestever ... % struct containing overall best solution (for convenience)
+	  bestever, ... % struct containing overall best solution (for convenience)
+	  y_eval...     % BAJELUK BEST/COUNTEVAL RECORDING
 	 ] = cmaes( ...
     fitfun, ...    % name of objective/fitness function
     xstart, ...    % objective variables initial point, determines N
@@ -743,6 +744,8 @@ else % flgresume
   end % irun == 1
   
 end % else flgresume 
+
+y_eval = [];  % BAJELUK BEST/COUNTEVAL RECORDING
 
 % -------------------- Generation Loop --------------------------------
 stopflag = {};
@@ -1644,6 +1647,9 @@ while isempty(stopflag)
 	  end
 	  fclose(fid); 
 	end
+
+	y_eval = [y_eval; out.solutions.bestever.f counteval];  % BAJELUK BEST/COUNTEVAL RECORDING
+                    
   end
 
     % get average time for recording data

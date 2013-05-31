@@ -60,12 +60,12 @@ for dim = dimensions            % small dimensions first, for CPU reasons
         if restarts > 0  % write additional restarted info
           fgeneric('restart', 'independent restart')
         end
-        [xopt, res] = opt_function('fgeneric', dim, fgeneric('ftarget'), ...
+        [xopt, ilaunch, ye] = opt_function('fgeneric', dim, fgeneric('ftarget'), ...
                      eval(maxfunevals) - fgeneric('evaluations'));
         % we don't have this information from CMA-ES :(
         % results = cat(1,results,res);
         % ye = [res.deltasY res.evaluations];
-        % y_evals = cat(1,y_evals,ye);
+        y_evals = cat(1,y_evals,ye);
 
         if fgeneric('fbest') < fgeneric('ftarget') || ...
            fgeneric('evaluations') + eval(minfunevals) > eval(maxfunevals)
