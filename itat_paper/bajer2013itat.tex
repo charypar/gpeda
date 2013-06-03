@@ -1,0 +1,92 @@
+\documentclass{itatnew}
+%% !!!dolezite: ak pisete po slovensky alebo po cesky pouzite
+%% \documentclass[slovensky]{itatnew}
+%% \documentclass[cesky]{itatnew}
+
+\begin{document}
+
+\title{Sampling Methods for Model Guided Sampling Optimization
+  with Gaussian Processes}
+
+\author{Lukáš Bajer\inst{1,2} \and Martin Holeňa\inst{2}}
+
+\institute{Faculty of Mathematics and Physics, Charles University in Prague,\\
+Malostranske nam. 25, 118 00 Prague 1, Czech Republic\\
+\email{bajer@cs.cas.cz} \\
+\and
+Institute of Computer Science, Academy of Sciences of the Czech Republic,\\
+Pod Vodarenskou vezi 2, 182 07 Prague 8, Czech Republic\\
+\email{martin@cs.cas.cz}}
+
+\maketitle              % typeset the title of the contribution
+
+\begin{abstract}
+Model Guided Sampling Optimization (MGSO) was recently proposed as an alternative for Jones' Kriging-based EGO algorithm for optimization of expensive black-box functions. Instead of maximizing a chosen criterion (e.g. expected improvement), MGSO samples probability of improvement forming multiple candidates -- a whole population of suggested solutions. This paper tackles problems with such sampling, it compares different sampling methods and suggests further development of the MGSO algorithm.
+\end{abstract}
+
+\section{Introduction}
+%
+Optimization of expensive empirical functions forms an important topic in many engineering or natural-sciences areas. For such functions, it is often impossible to obtain any derivatives or information about smoothness; moreover, there is no mathematical formula nor algorithm to evaluate. Instead, some simulation, or physical, chemical or computer experiment has to be performed, and measured value or result of such experiment is the value of the objective function being considered. These functions are also called black-box functions. Such empirical functions are usually very expensive to evaluate; one evaluation may cost a lot of time and money to process.
+
+Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, this kind of functions are usually characterized by a high number of local optima in where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been evolved. Even though these methods are slow and computational intensive, the cost of the evaluation of the empirical objective function is always much higher, and so the number of function evaluations is crucial to decrease as much as possible and the cost of these evaluations dominates the computational cost of the optimization algorithm.
+
+Evolutionary algorithms constitute a broad family of meta-heuristics which are used for black-box optimization very frequently. Some kinds of these algorithms or some techniques are designed to spent for the optimization as few objective function evaluations as possible, all of the three following approaches use some kind of model being built and updated within the optimization process.
+
+Estimation of distribution algorithms (EDAs) represent one such approach: EDAs iteratively (1) estimate probabilistic distribution of selected (usually better) candidate solutions and (2) sample this distribution forming a new set of solution for the next iteration. 
+
+Surrogate modelling is a technique of construction and usage of a regression model of the objective function. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
+
+Our method, Model Guided Sampling Optimization (MGSO), is based on both these approaches. 
+
+
+Evolutionary algorithms evolve in parallel a set of candidate solutions (a population) in multiple steps. Every iteration (in evolutionary context called generation) the candidate solutions (individuals) are evaluated with the objective function (fitness). Then, some of these individuals are selected (the better are preferred).  modified or recombined between each other, a new population is created, evaluated and so on.
+
+
+
+
+
+\subsection*{Acknowledgments}
+
+This work was supported by the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S}, and the Grant Agency of the Charles Univ.\ (GAUK) \hbox{278511/2011} grant. 
+
+%
+% ---- Bibliography ----
+%
+\bibliography{bajer2013itat}  % sigproc.bib is the name of the Bibliography in this case
+\bibliographystyle{abbrv}
+
+% %
+% \begin{thebibliography}{5}
+% %
+% \bibitem {clar:eke}
+% Clarke, F., Ekeland, I.:
+% Nonlinear oscillations and
+% boundary-value problems for Hamiltonian systems.
+% Arch. Rat. Mech. Anal. {\bf 78} (1982) 315--333
+% 
+% \bibitem {clar:eke:2}
+% Clarke, F., Ekeland, I.:
+% Solutions p\'{e}riodiques, du
+% p\'{e}riode donn\'{e}e, des \'{e}quations hamiltoniennes.
+% Note CRAS Paris {\bf 287} (1978) 1013--1015
+% 
+% \bibitem {mich:tar}
+% Michalek, R., Tarantello, G.:
+% Subharmonic solutions with prescribed minimal
+% period for nonautonomous Hamiltonian systems.
+% J. Diff. Eq. {\bf 72} (1988) 28--55
+% 
+% \bibitem {tar}
+% Tarantello, G.:
+% Subharmonic solutions for Hamiltonian
+% systems via a $\bbbz_{p}$ pseudoindex theory.
+% Annali di Matematica Pura (to appear)
+% 
+% \bibitem {rab}
+% Rabinowitz, P.:
+% On subharmonic solutions of a Hamiltonian system.
+% Comm. Pure Appl. Math. {\bf 33} (1980) 609--633
+% 
+% \end{thebibliography}
+
+\end{document}
