@@ -3,6 +3,15 @@
 %% \documentclass[slovensky]{itatnew}
 %% \documentclass[cesky]{itatnew}
 
+% Math shortcuts
+\usepackage{amssymb}
+\newcommand{\xx}{\mathrm{\mathbf{x}}}
+\newcommand{\yy}{\mathrm{\mathbf{y}}}
+\newcommand{\XX}{\mathrm{\mathbf{X}}}
+\newcommand{\CC}{\mathrm{\mathbf{C}}}
+\newcommand{\ttheta}{\mathbf{\theta}}
+\newcommand{\eell}{\boldsymbol\ell}
+
 \begin{document}
 
 \title{Sampling Methods for Model Guided Sampling Optimization
@@ -30,16 +39,59 @@ Optimization of expensive empirical functions forms an important topic in many e
 
 Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, this kind of functions are usually characterized by a high number of local optima in where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been evolved. Even though these methods are slow and computational intensive, the cost of the evaluation of the empirical objective function is always much higher, and so the number of function evaluations is crucial to decrease as much as possible and the cost of these evaluations dominates the computational cost of the optimization algorithm.
 
-Evolutionary algorithms constitute a broad family of meta-heuristics which are used for black-box optimization very frequently. Some kinds of these algorithms or some techniques are designed to spent for the optimization as few objective function evaluations as possible, all of the three following approaches use some kind of model being built and updated within the optimization process.
+Evolutionary algorithms \textbf{TODO-REF} constitute a broad family of meta-heuristics which are used for black-box optimization very frequently. Some kinds of these algorithms or some techniques are designed to spent for the optimization as few objective function evaluations as possible, all of the three following approaches use some kind of model being built and updated within the optimization process.
 
-Estimation of distribution algorithms (EDAs) represent one such approach: EDAs iteratively (1) estimate probabilistic distribution of selected (usually better) candidate solutions and (2) sample this distribution forming a new set of solution for the next iteration. 
+\emph{Estimation of distribution algorithms} (EDAs) \cite{larranaga_estimation_2002} represent one such approach: EDAs iteratively estimate probabilistic distribution of selected (usually better) candidate solutions and sample this distribution forming a new set of solution for the next iteration. 
 
-Surrogate modelling is a technique of construction and usage of a regression model of the objective function. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
+\emph{Surrogate modelling} is a technique of construction and usage of a regression model of the objective function \textbf{TODO-REF}. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
 
-Our method, Model Guided Sampling Optimization (MGSO), is based on both these approaches. 
+Our method, \emph{Model Guided Sampling Optimization} (MGSO), is based on both these approaches. It is similar to Jones' Efficient Global Optimization (EGO)~\cite{jones_efficient_1998}: similar to EGO, MGSO uses Gaussian process (GP, see~\cite{rasmussen_gaussian_2006} for reference) which provides a guide where to sample new candidate solutions in order to explore new solutions and exploit promising areas of the objective-function landscape. EGO evaluates a solution where a chosen criterion, Expected Improvement (EI) or Probability of Improvement (PoI) is maximized. On the other hand, MGSO sample GP model's latter criterion -- PoI, producing a set of new points. Further, the GP serves as a surrogate model of the objective function for some of the solutions at the same time. During each iteration, MGSO samples the model's PoI forming a population of new candidate solutions, evaluates them and updates the GP model with the new gathered data.
+
+This paper follows up to the previous brief introduction of MGSO~\cite{bajer_model_2013}. Instead of Gibbs' sampling, it uses slice sampling algorithm introduced by Neal~\cite{neal_slice_2003} which enables computational cheaper sampling in higher dimensions. Further, GP model is used as a surrogate model more often which brought faster convergence. The following section introduces methods used in the MGSO, third section further describes the MGSO algorithm and the fourth section bring some preliminary results from BBOB testing set~\cite{hansen_real_2009}.
 
 
-Evolutionary algorithms evolve in parallel a set of candidate solutions (a population) in multiple steps. Every iteration (in evolutionary context called generation) the candidate solutions (individuals) are evaluated with the objective function (fitness). Then, some of these individuals are selected (the better are preferred).  modified or recombined between each other, a new population is created, evaluated and so on.
+\section{Involved methods}
+
+\subsection{Gaussian processes}
+
+Gaussian process~\cite{rasmussen_gaussian_2006} is a probabilistic model based on Gaussian distributions. It is specified by a set of data points, covariance and mean function and relatively small number of hyper-parameters. The hyper-parameters are set in such way that the likelihood of the function value given the values of the decision variables is maximized for the training data points.
+
+The GP model can predict the function value in a new data point in the form of Gaussian distribution: the GP provides mean and standard deviation of the function value. Through the predicted mean, the GP can serve as a surrogate model, and standard deviation is a measure of uncertainty of the prediction in a specified point.
+
+Let $\XX_N = \{\xx_i \ | \ \xx_i \in \mathbb{R}^{D}\}_{i=1}^{N}$ be a set of $N$ training data points with known dependent-variable values $\yy = \{y_i\}_{i=1}^{N}$ and $f(\xx)$ be an unknown function being modelled for which $f(\xx_i) = y_i$ for all $i \in \{1,\ldots,N\}$. The GP model imposes a probabilistic model on the data: the vector of known function values $\yy_N$ is considered as one sample of a $N$-dimensional multivariate Gaussian distribution with probability density $p(\yy \, | \, \XX_N)$. If we add a new data point ($\xx_{N+1}, y_{N+1})$, the probability density is, according to B\"{u}che \cite{buche_accelerating_2005},
+\begin{equation}
+p(\yy_{N+1} \, | \, \XX_{N+1}) = \frac { \exp(-\frac{1}{2} \yy^\top_{N+1} \CC^{-1}_{N+1} \yy_{N+1}) } { \sqrt{(2\pi)^{N+1} \det(\CC_{N+1})} }
+\end{equation}
+where $\CC_{N+1}$ is the covariance matrix of the Gaussian distribution (for which mean is usually set to constant zero). This covariance can be written as
+\begin{equation}
+\CC_{N+1} = \left( \begin{array}{cc} \CC_N & \mathbf{k} \\ \mathbf{k}^\top & \kappa \end{array} \right)
+\end{equation}
+where $\CC_N$ is the covariance of the Gaussian distribution given the $N$ training data points, $\mathbf{k}$ is a vector containing covariances between the new point and training data, and $\kappa$ is the variance of the new point itself. Further, inverse $\CC^{-1}_{N-1}$ of the extended covariance can be expressed using inverse of the training covariance $\CC^{-1}_N$ which simplifies density of the distribution of a new point to a univariate Gaussian with density
+\begin{equation}
+p(y_{N+1} \, | \, \XX_{N+1}, \yy_N) \ \varpropto \ \exp \left( -\frac{1}{2} \frac {(y_{N+1} - \hat{y}_{N+1})^2} {\sigma^2_{y_{N+1}}} \right)
+\end{equation}
+and mean and variance given by
+\begin{eqnarray}
+\hat{y}_{N+1} & = & \mathbf{k}^\top \CC^{-1}_N \yy_N, \\
+\sigma^2_{y_{N+1}} & = & \kappa - \mathbf{k}^\top \CC^{-1}_N \mathbf{k}.
+\end{eqnarray}
+Further details can be found in \cite{buche_accelerating_2005}.
+
+The covariances $\CC_N$ plays a crucial role in these equations. Gaussian processes use parametrized covariance functions $C$ describing prior assumptions on the shape of the modeled function. The covariance between function values at two data points $\xx_p$ and $\xx_q$ is given by $C(\xx_p, \xx_q)$ which forms also the $(p,q)$-th element of the matrix $\CC_N$. In our case, we used the most common squared-exponential function
+\begin{equation}
+C(\xx_p, \xx_q) = \theta_1 \exp \left( -\frac{1}{2} \sum^D_{i=1} \frac{(x^i_p - x^i_q)^2} {2l^2} \right) + \theta_2 + \delta_{p,q}\theta_3
+\end{equation}
+which is used when the modelled function is rather smooth. The closer the points $\xx_p$ and $\xx_q$ are, the closer the covariance function value is to 1 and the stronger correlation between function values $f(\xx_p)$ and $f(\xx_q)$ is. The hyper-parameter $\theta_1$ scales this correlation, $\theta_2$ rises the value from zero and $\theta_3$ means a white noise of the diagonal elements of the matrix. The last parameter $l$ is the length-scale with which the distance of two considered data points is compared. Estimate of these hyper-parameters can be supplied by the user and the final value is usually learnt using maximum-likelihood approach.
+
+
+% \noindent ==================
+% 
+% Evolutionary algorithms evolve in parallel a set of candidate solutions (a population) in multiple steps. Every iteration (in evolutionary context called generation) the candidate solutions (individuals) are evaluated with the objective function (so called fitness function). Then, some of these individuals are selected; the better ones are preferred. Finally, the selected individuals are modified or recombined between each other, a new population is created and a new generation starts again.
+% 
+% \paragraph{Surrogate Modelling.}
+% Approximation of the fitness function with some regression model is a common cure for tasks when empirical objective function has to be used. These \textit{surrogate models} simulate behaviour of the original function while being much cheaper and much less time consuming to evaluate. As a surrogate model, any suitable regression model can be used~\cite{hosder2001polynomial,buche2005accelerating,ulmer2005model}.
+% 
+% In connection with evolutionary optimization, artificial neural networks of the type multilayer perceptrons \cite{jin2005neural} and networks with radial basis functions \cite{zhou2007combining,ong2004surrogate} have been particularly popular. The last mentioned kind of neural networks underlies also the model reported in this paper.
 
 
 
@@ -47,7 +99,7 @@ Evolutionary algorithms evolve in parallel a set of candidate solutions (a popul
 
 \subsection*{Acknowledgments}
 
-This work was supported by the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S}, and the Grant Agency of the Charles Univ.\ (GAUK) \hbox{278511/2011} grant. 
+This work was supported by the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S}, and the Grant Agency of the Charles University (GAUK) \hbox{278511/2011} grant. 
 
 %
 % ---- Bibliography ----
