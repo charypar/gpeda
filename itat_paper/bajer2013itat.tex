@@ -13,6 +13,7 @@
 \newcommand{\CC}{\mathrm{\mathbf{C}}}
 \newcommand{\ttheta}{\mathbf{\theta}}
 \newcommand{\eell}{\boldsymbol\ell}
+% \newcommand{\msf}[1]{\mathsf{\mathbf{#1}}}
 
 \begin{document}
 
@@ -124,49 +125,87 @@ u^k \sim U(0,1), \quad  x^k = F^{-1}_k(u_k).
 \end{displaymath}
 Linear interpolation between 20-points grid of empirical CDF was used.
 
-Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard deviation $\hat{\sigma}(\xx)$ for 20 points requires only two calls of GP model prediction, the complexity of sampling rises quickly with number of variables $D$ which causes sampling in more than three dimensions extremely slow.
+Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard deviation $\hat{\sigma}(\xx)$ for 20 points requires only two calls of GP model prediction, the complexity of sampling rises quickly with number of variables $D$ which causes sampling in more than three dimensions being extremely slow.
 
 \paragraph{Slice sampling.}
 
-\section{Model Guided Sampling Optimization}
-\label{sec:mgso}
-
-
-\begin{algorithm}
+\begin{algorithm}[b]
 \begin{algorithmic}[1]
-\STATE \textbf{Inputs}: $f$ -- function proportional to the density \\
-  \quad $\xx_0$ -- starting point, $\xx \in \mathbb{R}^D$ \\
+{\small
+\STATE \textbf{Input}: $f$ -- function proportional to the density \\
+  \quad $\xx_0$ -- starting point, $\xx_0 \in \mathbb{R}^D$ \\
   \quad $\mathbf{w}$ -- scale estimates, $\mathbf{w} \in \mathbb{R}^D$ \\
   \quad $n$ -- required number of samples
 \FOR {$k = 0,1,\ldots,n$}
-  \STATE \COMMENT{define the slice} \\
-      $y \sim U(0, \, f(\xx_k))$
-  \STATE \COMMENT{random position of the hyper-rectangle} \\
-      $\mathbf{U} \sim U(0,1), \quad \mathbf{U} \in [0,1]^D$ \\
-      $\mathbf{L} \leftarrow \xx_k - \mathbf{w} \cdot \mathbf{U}$ \\
-      $\mathbf{R} \leftarrow \mathbf{L} + \mathbf{w}$
-  \STATE \COMMENT{sample from the hyper-rectangle, shrink when points are rejected}
-  \WHILE {given number of tries not exceeded}
-    \STATE $\mathbf{U} \sim U(0,1), \quad \mathbf{U} \in [0,1]^D$
-    \STATE $\xx_{k+1} \leftarrow \mathbf{L} + \mathbf{U} \cdot (\mathbf{R} - \mathbf{L})$
+  % \STATE \COMMENT{define the slice} \\
+  \STATE $y \sim U(0, \, f(\xx_k))$  \hspace{\fill}  \COMMENT{height of the slice}
+  % \STATE \COMMENT{random position of the hyper-rectangle} \\
+  \STATE $\mathbf{u} \sim U(0,1)^D$ %  \hspace{\fill}  \COMMENT{random shift of hyper-rectangle}
+  \STATE $\mathbf{L} \leftarrow \xx_k - \mathbf{w} \circ \mathbf{u}$  \hspace{\fill}  \COMMENT{randomly shifted lower bound} % \COMMENT{$\circ$ is entrywise product}
+  \STATE $\mathbf{R} \leftarrow \mathbf{L} + \mathbf{w}$   \hspace{\fill}  \COMMENT{upper bound}
+  % \STATE $\mathbf{L},\mathbf{R} \leftarrow$ lower/upper bounds of a hyper-rectangle $\mathbf{H}$ \\
+  % \quad $\xx_k \in \mathbf{H}, \quad R_j - L_j = w_j \ \forall j = 1,\ldots,D$
+  \WHILE {given number of tries has not exceeded}
+    \STATE $\mathbf{u} \sim U(0,1)^D$
+    \STATE $\xx_{k+1} \leftarrow \mathbf{L} + \mathbf{u} \circ (\mathbf{R} - \mathbf{L})$ \hspace{\fill}  \COMMENT{$\xx_{k+1} \sim U(\mathbf{L},\mathbf{R})^D$}
+    % \STATE $\xx_{k+1} \leftarrow$ random sample from the hyper-rectangle $[\mathbf{L}, \mathbf{R}]$
     \IF {$(y < f(\xx_{k+1}))$}
-      \STATE exit loop
+      \STATE accept $\xx_{k+1}$ and exit the \emph{while} loop
     \ENDIF
-    \FOR {$j = 1,\ldots,D$}
+    \FOR {each dimension $j = 1,\ldots,D$}
       \IF {$(x^j_{k+1} < x^j_k)$}
-        \STATE $L^j \leftarrow x^j_{k+1}$
+      \STATE $L^j \leftarrow x^j_{k+1}$  \hspace{\fill}  \COMMENT{shrink the lower bound}
       \ELSE
-        \STATE $R^j \leftarrow x^j_{k+1}$
+      \STATE $R^j \leftarrow x^j_{k+1}$  \hspace{\fill}  \COMMENT{shrink the upper bound}
       \ENDIF
     \ENDFOR
   \ENDWHILE
 \ENDFOR
 \STATE \textbf{Output}: $\{\xx_1,\ldots,\xx_n\}$
+}
 \end{algorithmic}
 \caption{Slice sampling~\cite{neal_slice_2003}}
 \label{alg:slice}
 \end{algorithm}
 
+This novel kind of sampling brought by Neal~\cite{neal_slice_2003} is based on a simple and smart idea. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subspace $S=\{\xx\,|\,f(\xx) > y\}$ which is quickly approximated and uniformly sampled, forming the next point $\xx_1$. The approximation of the subspace is dependent on the only parameter of this method, scale estimate $\mathbf{w}$, which is even not crucial for speed nor convergence.
+
+Slice sampling has several advantages. First, it nicely scales with higher dimensionality of the problem. Second, there is no need of conditional distributions as it is with Gibbs' sampler. The pseudo-code of this method is described in Alg.\,\ref{alg:slice}. This sampler is used in the second version of MGSO, described in this paper.
+
+
+\section{Model Guided Sampling Optimization}
+\label{sec:mgso}
+
+As was already mentioned, the MGSO algorithm for black-box optimization has many common aspects with Jones'~\cite{jones_efficient_1998} efficient global optimization algorithm. Like some of the versions of EGO, it uses probability of improvement as a measure of promising areas for optimum. The main difference is that it does not maximizes this criterion, but it samples this function producing the whole population of individuals. 
+
+
+\begin{algorithm}[t]
+\begin{algorithmic}[1]
+{\small
+  \STATE \textbf{Input}: $f$ -- objective function \\
+      \quad $N', N$ -- sizes of the initial and standard population \\
+      \quad $N_N$ -- no. of individuals for dataset restriction
+  \STATE $\mathsf{S}_0 = \{(\xx_j, y_j)\}_{j=1}^{N'} \leftarrow$ generate $N'$ initial samples 
+      and evaluate them % to get observed values $\{y_j\}_{j=1}^{N'}$ forming a dataset $\mathsf{S}_0 = \{(\xx_0, y_0)\}$
+  \WHILE {no stopping condition is met, $i=1,2,\ldots$}
+    \STATE $\mathsf{M}_i \leftarrow$ build a GP model and fit its hyper-parameters
+        according to the dataset $\mathsf{S}_{i-1}$
+    \STATE $\{\xx_j\}_{j=1}^N  \leftarrow$ sample $N$ new candidate solutions based
+        on the PoI distribution of $\mathsf{M}_i$, optionally with
+        different targets $T$
+    \STATE $\{y_j\}_{j=1}^N \leftarrow f(\{\xx_j\}_{j=1}^N)$  \hspace{\fill}  \COMMENT{evaluate the population} 
+    \STATE $\mathsf{S}_i \leftarrow \mathsf{S}_{i-1} \cup \{(\xx_j, y_j)\}_{j=1}^N$  \hspace{\fill}  \COMMENT{augment the dataset} 
+    \STATE $(\tilde{\xx}, \tilde{y}) \leftarrow \arg \min_{(\xx,y) \in \mathsf{S}_i} y$  \hspace{\fill}  \COMMENT{find the best solution}
+    \IF {any rescale condition is met} 
+    \STATE restrict the dataset $\mathsf{S}_i$ according to the $N_N$ nearest solutions to $(\tilde{\xx},\tilde{y})$ and transform $\mathsf{S}_i$ to $[-1, 1]^D$
+    \ENDIF
+  \ENDWHILE
+  \STATE \textbf{Output}: the best found solution $(\tilde{\xx}, \tilde{y})$
+}
+\end{algorithmic}
+\caption{MGSO (Model Guided Sampling Optimization}
+\label{alg:mgso}
+\end{algorithm}
 
 \section{Experimental results and conclusion}
 \label{sec:results}
