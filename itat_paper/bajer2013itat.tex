@@ -45,11 +45,11 @@ They are usually very expensive to evaluate; one evaluation may cost a lot of ti
 Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, functions of this kind are usually characterized by a high number of local optima where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been evolved. Even though these methods are slow and computational intensive, the cost of the evaluation of the empirical objective function is always much higher, and so the number of function evaluations is crucial to decrease as much as possible.
 % and the cost of these evaluations dominates the computational cost of the optimization algorithm.
 
-Evolutionary algorithms \textbf{TODO-REF} constitute a broad family of meta-heuristics that are used for black-box optimization very frequently. Some kinds of these algorithms or some techniques are designed to spent for the optimization as few objective function evaluations as possible, all of the three following approaches use some kind of model being built and updated within the optimization process.
+Evolutionary algorithms constitute a broad family of meta-heuristics that are used for black-box optimization very frequently. Some kinds of these algorithms or some techniques are designed to spent for the optimization as few objective function evaluations as possible, all of the three following approaches use some kind of model being built and updated within the optimization process.
 
 \emph{Estimation of distribution algorithms} (EDAs) \cite{larranaga_estimation_2002} represent one such approach: EDAs iteratively estimate probabilistic distribution of selected candidate solutions (usually better than some threshold) and sample this distribution forming a new set of solutions for the next iteration. 
 
-\emph{Surrogate modelling} is a technique of construction and usage of a regression model of the objective function \textbf{TODO-REF}. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
+\emph{Surrogate modelling} is a technique of construction and usage of a regression model of the objective function~\cite{jin_comprehensive_2005}. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
 
 Our method, \emph{Model Guided Sampling Optimization} (MGSO), is based on both these approaches. It is similar to Jones' Efficient Global Optimization (EGO)~\cite{jones_efficient_1998}: like EGO, MGSO uses a Gaussian process (GP, see~\cite{rasmussen_gaussian_2006} for reference), which provides a guide where to sample new candidate solutions in order to explore new solutions and exploit promising areas of the objective-function landscape. EGO evaluates a solution where a chosen criterion, Expected Improvement (EI) or Probability of Improvement (PoI) is maximized. On the other hand, MGSO samples GP model's latter criterion -- PoI, producing a set of new points. At the same time, the GP serves as a surrogate model of the objective function for some of the solutions. During each iteration, MGSO samples the model's PoI forming a population of new candidate solutions, evaluates them and updates the GP model with the new gathered data.
 
@@ -168,36 +168,39 @@ Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard dev
 \label{alg:slice}
 \end{algorithm}
 
-This novel kind of sampling brought by Neal~\cite{neal_slice_2003} is based on a simple and smart idea. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subspace $S=\{\xx\,|\,f(\xx) > y\}$ which is quickly approximated and uniformly sampled, forming the next point $\xx_1$. The approximation of the subspace is dependent on the only parameter of this method, scale estimate $\mathbf{w} \in \mathbb{R}^D$, which is even not crucial for speed nor convergence.
+This novel kind of sampling brought by Neal~\cite{neal_slice_2003} is based on a simple and smart idea. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subspace $S=\{\xx \in \mathbb{R}^D \,|\, f(\xx) > y\}$ which is stepwise approximated by a hyper-rectangle and uniformly sampled, forming a new point $\xx_1$. The approximation of the subspace is dependent on the only parameter of this method, scale estimate $\mathbf{w} \in \mathbb{R}^D$, which does not affect correctness and its wrong guess decreases the speed of convergence only moderately. The sampler then starts again from the $(\xx_1, f(\xx_1))$ and continuously generates next points, see the pseudo-code in Alg.\,\ref{alg:slice}.
 
-Slice sampling has several advantages. First, it nicely scales with higher dimensionality of the problem. Second, there is no need of conditional distributions as it is with Gibbs' sampler. Moreover, it does not require the density being normalized, function proportional to the density is sufficient (which is also the case of PoI). The pseudo-code of this method is described in Alg.\,\ref{alg:slice}. This sampler is used in the second version of MGSO, described in this paper.
+Slice sampling has several advantages. First, it nicely scales with higher dimensionalities of the problem. Second, there is no need of conditional distributions as it is with Gibbs' sampler. Moreover, it does not require the density being normalized: function proportional to the density is sufficient (which is the case of PoI). This kind of sampler is used in the second version of MGSO, described in this paper.
 
 
 \section{Model Guided Sampling Optimization}
 \label{sec:mgso}
 
-As was already mentioned, the MGSO algorithm for black-box optimization has many common aspects with Jones'~\cite{jones_efficient_1998} efficient global optimization algorithm. Like some of the versions of EGO, it uses probability of improvement as a measure how promising is specified point for locating optimum given the current knowledge of the function landscape saved in the dataset and modelled by the GP. The main difference is that it does not maximizes this criterion, but it samples this function (proportional to density) producing the whole population of individuals. 
+As it was already mentioned, the MGSO algorithm for black-box optimization has many common aspects with Jones'~\cite{jones_efficient_1998} Efficient Global Optimization algorithm. Like some of the versions of EGO, it uses the probability of improvement $\mathrm{PoI}_T^{\mathsf{M}_i}(\xx)$ as a measure how promising the specified point $\xx$ is for locating the optimum given a chosen threshold $T$ and the current knowledge of the function landscape
+% saved in the current dataset $\mathsf{S}_i$ and
+modelled by the actual GP model $\mathsf{M}_i$. The main difference is that it does not maximizes this criterion, but it samples the PoI (which is proportional to a density) producing the whole population of individuals. 
 
+After the initial (usually uniform random) sample of the input space, its evaluation and saving to the dataset $\mathsf{S}_0$, the MGSO algorithm proceeds as follows (see Alg.\,\ref{alg:mgso} for details). First, a new GP model $\mathsf{M}_i$ is fitted to the actual dataset $\mathsf{S}_i$. The model predictive distribution guides the further optimization: the model's PoI is sampled forming the new population. The second version of MGSO added step 6: the last individual in the population is obtained by continuous local smooth optimization of the GP model which speeds-up the optimization process especially in the final part of the algorithm's run. The algorithm continues with evaluating the new population, a new model is fitted to this augmented dataset and the process is repeated until a stopping condition is met.
 
 \begin{algorithm}[t]
 \begin{algorithmic}[1]
 {\small
   \STATE \textbf{Input}: $f$ -- objective function \\
       \quad $N', N$ -- sizes of the initial and standard population \\
-      \quad $N_N$ -- no. of individuals for dataset restriction
+      \quad $r$ -- no. of solutions for dataset restriction
   \STATE $\mathsf{S}_0 = \{(\xx_j, y_j)\}_{j=1}^{N'} \leftarrow$ generate $N'$ initial samples 
       and evaluate them % to get observed values $\{y_j\}_{j=1}^{N'}$ forming a dataset $\mathsf{S}_0 = \{(\xx_0, y_0)\}$
   \WHILE {no stopping condition is met, $i=1,2,\ldots$}
     \STATE $\mathsf{M}_i \leftarrow$ build a GP model and fit its hyper-parameters
         according to the dataset $\mathsf{S}_{i-1}$
-    \STATE $\{\xx_j\}_{j=1}^N  \leftarrow$ sample $N$ new candidate solutions based
-        on the PoI distribution of $\mathsf{M}_i$, optionally with
-        different targets $T$
+    \STATE $\{\xx_j\}_{j=1}^{N}  \leftarrow$ sample the $\textrm{PoI}_T^{\mathsf{M}_i}(\xx)$ 
+        forming $N$ new candidate solutions, optionally with different targets $T$
+    \STATE $\xx_k \leftarrow$ find the minimum of the GP (by local continuous optimization) and replace the nearest solution from $\{\xx_j\}_{j=1}^{N}$ with it
     \STATE $\{y_j\}_{j=1}^N \leftarrow f(\{\xx_j\}_{j=1}^N)$  \hspace{\fill}  \COMMENT{evaluate the population} 
     \STATE $\mathsf{S}_i \leftarrow \mathsf{S}_{i-1} \cup \{(\xx_j, y_j)\}_{j=1}^N$  \hspace{\fill}  \COMMENT{augment the dataset} 
-    \STATE $(\tilde{\xx}, \tilde{y}) \leftarrow \arg \min_{(\xx,y) \in \mathsf{S}_i} y$  \hspace{\fill}  \COMMENT{find the best solution}
+    \STATE $(\tilde{\xx}, \tilde{y}) \leftarrow \arg \min_{(\xx,y) \in \mathsf{S}_i} y$  \hspace{\fill}  \COMMENT{find the best solution in $\mathsf{S}_i$}
     \IF {any rescale condition is met} 
-    \STATE restrict the dataset $\mathsf{S}_i$ according to the $N_N$ nearest solutions to $(\tilde{\xx},\tilde{y})$ and transform $\mathsf{S}_i$ to $[-1, 1]^D$
+    \STATE restrict the dataset $\mathsf{S}_i$ to the bounding-box $[\mathbf{l}_i,\mathbf{u}_i]$ of the $r$ nearest solutions along the best solution $(\tilde{\xx},\tilde{y})$ and linearly transform $\mathsf{S}_i$ to $[-1, 1]^D$
     \ENDIF
   \ENDWHILE
   \STATE \textbf{Output}: the best found solution $(\tilde{\xx}, \tilde{y})$
@@ -206,6 +209,14 @@ As was already mentioned, the MGSO algorithm for black-box optimization has many
 \caption{MGSO (Model Guided Sampling Optimization}
 \label{alg:mgso}
 \end{algorithm}
+
+To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system mapped to $[-1, 1]^D$ and the transformation can be updated during the optimization. Updating it restricts the learning and sampling space to a neighborhood of the optimum, which enables sampling in the situation when the PoI is non-zero only in a very small region.
+
+The bounds $[l^j, u^j], j=1,\ldots,D$ in each coordinate dimension are found as a bounding box of $r$ nearest samples from the current optimum, expanded by 10\%. The default value is $r=20$ and is together with initial number of samples $N'$ and population size $N$ an input parameter of MGSO.
+
+The slice sampling method enabled us to sample multivariate distributions more easily. Samples resulting in ill-con\-di\-tion\-ed covariance matrices of the GP are rejected.
+
+
 
 \section{Experimental results and conclusion}
 \label{sec:results}
