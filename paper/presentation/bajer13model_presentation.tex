@@ -21,6 +21,33 @@
 % Or whatever. Note that the encoding and the font should match. If T1
 % does not look nice, try deleting the line with the fontenc.
 
+\usepackage[style=authoryear]{biblatex}
+\usepackage{hyperref}
+
+\setbeamertemplate{bibliography item}{%
+  \ifboolexpr{ test {\ifentrytype{book}} or test {\ifentrytype{mvbook}}
+    or test {\ifentrytype{collection}} or test {\ifentrytype{mvcollection}}
+    or test {\ifentrytype{reference}} or test {\ifentrytype{mvreference}} }
+    {\setbeamertemplate{bibliography item}[book]}
+    {\ifentrytype{online}
+       {\setbeamertemplate{bibliography item}[online]}
+       {\setbeamertemplate{bibliography item}[article]}}%
+  \usebeamertemplate{bibliography item}}
+
+\defbibenvironment{bibliography}
+  {\list{}
+     {\settowidth{\labelwidth}{\usebeamertemplate{bibliography item}}%
+      \setlength{\leftmargin}{\labelwidth}%
+      \setlength{\labelsep}{\biblabelsep}%
+      \addtolength{\leftmargin}{\labelsep}%
+      \setlength{\itemsep}{\bibitemsep}%
+      \setlength{\parsep}{\bibparsep}}}
+  {\endlist}
+  {\item}
+
+% \addbibresource{bajer2013model.bib}
+\bibliography{bajer2013model}
+
 \newcommand{\xx}{\mathrm{\mathbf{x}}}
 \newcommand{\yy}{\mathrm{\mathbf{y}}}
 \newcommand{\ttheta}{\mathbf{\theta}}
@@ -33,15 +60,15 @@
   {Model Guided Sampling Optimization with Gaussian Processes \\ for Expensive Black-Box Optimization}
 
 \author[Luk\'{a}\v{s} Bajer, Viktor Charypar, Martin Hole\v{n}a]
-{Luk\'{a}\v{s}~Bajer$^{1,2}$, Viktor Charypar$^3$ \and Martin Hole\v{n}a$^2$}
+{Luk\'{a}\v{s}~Bajer$^{1,2}$, Viktor Charypar$^3$, Martin Hole\v{n}a$^2$}
 % - Give the names in the same order as the appear in the paper.
 % - Use the \inst{?} command only if the authors have different
 %   affiliation.
 
 \institute[MFF UK, UI AVČR, FJFI ČVUT] % (optional, but mostly needed)
 {
-  $^1$Faculty of Mathematics and Physics, Charles University, and \\
-  $^2$Institute of Computer Science, Czech Academy of Sciences \\
+  $^1$Faculty of Mathematics and Physics, Charles University, \\
+  $^2$Institute of Computer Science, Czech Academy of Sciences, and \\
   $^3$Faculty of Nuclear Sciences, Czech Technical University
 \vskip 1em
   Prague, Czech Republic
@@ -49,7 +76,7 @@
 % - Use the \inst command only if there are several affiliations.
 % - Keep it simple, no one is interested in your street address.
 
-\date{GECCO, July 2013}
+\date{GECCO, Amsterdam, July 2013}
 % \date[EvA 2008] % (optional, should be abbreviation of conference name)
 % {AIL086 Evolutionary Algorithms 2}
 % % - Either use conference name or its abbreviation.
@@ -123,17 +150,115 @@
 
 \begin{frame}
   \frametitle{Optimization of expensive black-box functions}
-  optimization of black-box functions
-  \begin{figure}
-  \includegraphics[width=0.6\linewidth]{img/black-box-function}
-  % \caption{}
-  \end{figure}
-  \begin{itemize}
-    \item continuous domain: $\xx \in \mathbb{R}^D$
+  \begin{itemize}[<+->]
+    \item optimization of black-box functions
+      \begin{figure}
+      \includegraphics[width=0.6\linewidth]{img/black-box-function}
+      % \caption{}
+      \end{figure}
+    \item in continuous domain: $\xx \in \mathbb{R}^D$
     \item only evaluation of the function value, \\
       \alert{no derivatives} or gradients available
+      \begin{figure}
+      \includegraphics[width=0.4\linewidth]{img/black-box-samples}
+      % \caption{}
+      \end{figure}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Optimization of expensive black-box functions}
+  cost of the optimization:
+  \begin{itemize}
     \item evaluations are \alert{expensive} and/or time-demanding
-    \item search cost $\sim$ the number of function evaluations
+    \item \alert{search cost} $\sim$ the number of function evaluations
+  \end{itemize}
+  \vskip 2ex
+  \pause
+  \textbf{Goals}:
+  \begin{itemize}
+    \item find a solution $\xx$ with the smallest function \\
+      value $f(\xx)$ as possible (WLOG, we consider \emph{minimization})
+    \item use reasonable small number of function evaluations \\
+      (the lower the better)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{EA's for expensive black-box optimization}
+  \begin{itemize}
+    \item EA's often manage to \alert{escape} from \alert{local optima}
+    \item but use usually \alert{many} function \alert{evaluations}
+  \end{itemize}
+  \vskip 2ex
+  \pause
+  what can help:
+  \begin{itemize}
+    \item utilize already measured values \\
+      (at least do not measure anything again)
+    \item learn the shape of the function landscape \\
+      or learn the (global) gradient or step direction \& size
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Model-based methods accelerating the convergence}
+  several methods are used in order to decrease \\
+    the number of objective function evaluations needed by EA's
+  \vskip 2ex
+  \begin{enumerate}
+    \item Surrogate modelling
+    \item Estimation of Distribution Algorithms (EDA's)
+    \item Efficient Global Optimization (EGO)~\footfullcite{jones_efficient_1998}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Surrogate modelling}
+  \textbf{Surrogate modelling}
+  \begin{itemize}
+    \item technique which builds an \alert{approximating model} \\
+      of the fitness function landscape
+    \item such model provides us with \alert{cheap and fast} \\
+      replacement of the fitness function
+    \item generation of the new points guided by EA \\
+      (crossover, mutation,\ldots)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Estimation of Distribution Algorithms (EDA)}
+  \textbf{Estimation of Distribution Algorithms}:
+  \begin{itemize}
+    \item the model represents a distribution of solutions in the \alert{input space}
+    \item new candidate solutions are generated via sampling the model
+    \item better solutions are selected for the next generation 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{}
+  \begin{itemize}
+    \item
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{MGSO}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Model Guided Sampling Optimization}
+  \textbf{main idea}:
+  \begin{itemize}
+    \item consider the PoI...
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{}
+  \begin{itemize}
+    \item
   \end{itemize}
 \end{frame}
 
