@@ -413,6 +413,44 @@
   \end{columns}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Implementation issues}
+  \textbf{Numerical instability}
+  \begin{columns}[T]
+  \column{5cm}
+    \begin{figure}
+    \includegraphics[width=\linewidth]{img/numerical-instability}
+    % \caption{}
+    \end{figure}
+  \column{5.5cm}
+    \begin{itemize}
+      \item sampling a new point $(\xx', f(\xx'))$ close to one already in
+          the dataset can cause numerical problems in covariance matrix inversion
+      \item such points are rejected in sampling
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Implementation issues}
+  \textbf{Degeneration of PoI}
+  \begin{columns}[T]
+  \column{5cm}
+    \begin{figure}
+    \includegraphics[width=\linewidth]{img/degenerate-poi}
+    % \caption{}
+    \end{figure}
+  \column{5.5cm}
+    \begin{itemize}
+      \item PoI degenerates close to a discrete distribution in later phases of the optimization
+      \item happens when the input space is well explored and the model's error estimate is low
+      \item resolved by \alert{cropping} the input space to the region of the optimum and \alert{rescaling} to get
+        better numerical resolution for sampling
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+
 \end{document}
 
 \begin{frame}
