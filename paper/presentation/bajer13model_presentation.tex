@@ -21,7 +21,7 @@
 % Or whatever. Note that the encoding and the font should match. If T1
 % does not look nice, try deleting the line with the fontenc.
 
-% \usepackage[style=authoryear]{biblatex}
+\usepackage[style=authoryear]{biblatex}
 \usepackage{hyperref}
 \usepackage{amssymb}
 
@@ -222,7 +222,7 @@
   \begin{enumerate}
     \item Surrogate modelling
     \item Estimation of Distribution Algorithms (EDA's)
-%    \item Efficient Global Optimization (EGO)~\footfullcite{jones_efficient_1998}
+    \item Efficient Global Optimization (EGO)~\footfullcite{jones_efficient_1998}
   \end{enumerate}
 \end{frame}
 
@@ -363,7 +363,7 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Gaussian Processes}
+\subsection{Gaussian Processes}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
@@ -413,6 +413,95 @@
   \end{columns}
 \end{frame}
 
+\subsection{Sampling PoI}
+
+\begin{frame}
+  \frametitle{Probability of improvement}
+  \begin{columns}[T]
+  \column{5cm}
+    \begin{figure}
+    \includegraphics[width=\linewidth]{img/poi-example-color}
+    % \caption{}
+    \end{figure}
+  \column{5.5cm}
+    \begin{itemize}
+      \item no explicit formula for $\mathrm{PoI}$
+      \item improvement in a new point $\xx$ is probable when
+        \begin{itemize}
+          \item not many samples around, i.e. large $\sigma$ at $\xx$
+          \item promising area is searched, i.e. low $f(\xx)$
+        \end{itemize}
+      \pause
+      \item different way of generating new points
+        \begin{itemize}
+          \item \blue{EGO}: find the maximum of PoI
+          \item \blue{MGSO}: sample the PoI as a distribution
+        \end{itemize}
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Slice sampling}
+  \begin{itemize}
+    \item as no explicit formula for PoI exists, MCMC sampling methods are used
+    \item Gibbs sampling (used in the article) showed to be very inefficient
+    \item instead, \alert{slice sampling} used in the new version
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Slice sampling}
+  \only<1>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-1}
+    % \caption{}
+    \end{figure}
+  }
+  \only<2>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-2}
+    % \caption{}
+    \end{figure}
+  }
+  \only<3>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-3}
+    % \caption{}
+    \end{figure}
+  }
+  \only<4>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-4}
+    % \caption{}
+    \end{figure}
+  }
+  \only<5>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-5}
+    % \caption{}
+    \end{figure}
+  }
+  \only<6>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-6}
+    % \caption{}
+    \end{figure}
+  }
+  \only<7>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-7}
+    % \caption{}
+    \end{figure}
+  }
+  \only<8>{
+    \begin{figure}
+    \includegraphics[width=0.6\linewidth]{img/slice-sampling-8}
+    % \caption{}
+    \end{figure}
+  }
+\end{frame}
+
 \begin{frame}
   \frametitle{Implementation issues}
   \textbf{Numerical instability}
@@ -450,14 +539,69 @@
   \end{columns}
 \end{frame}
 
-
-\end{document}
+\section{Preliminary results}
 
 \begin{frame}
-  \frametitle{}
+  \frametitle{Preliminary results}
   \begin{itemize}
-    \item
+    \item MGSO was tested on \blue{three benchmark} functions from BBOB testbed
+      \begin{itemize}
+        \item sphere
+        \item Rosenbrock
+        \item Rastrigin
+      \end{itemize}
+    \item three dimensionalities: 2D, 5D, 10D (not in LBA)
+    \item compared to \blue{CMA-ES} (not in LBA)
   \end{itemize}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Results in 2-D}
+  \begin{figure}
+  \includegraphics[width=0.7\linewidth]{img/optim_2D.pdf}
+  % \caption{}
+  \end{figure}
+  {\small
+    average results of the best-found fitness from 15 runs on different function instances }
+\end{frame}
 
+\begin{frame}
+  \frametitle{Results in 5-D}
+  \begin{figure}
+  \includegraphics[width=0.7\linewidth]{img/optim_5D.pdf}
+  % \caption{}
+  \end{figure}
+  {\small
+    average results of the best-found fitness from 15 runs on different function instances }
+\end{frame}
+
+\begin{frame}
+  \frametitle{Results in 10-D}
+  \begin{figure}
+  \includegraphics[width=0.7\linewidth]{img/optim_10D.pdf}
+  % \caption{}
+  \end{figure}
+  {\small
+    average results of the best-found fitness from 15 runs on different function instances }
+\end{frame}
+
+\begin{frame}
+  \frametitle{Conclusion}
+  \begin{itemize}
+    \item MGSO showed to perform well on easy functions or in very low dimensions
+    \item several issues have to be considered further
+      \begin{itemize}
+        \item better initial sampling
+        \item model's hyperparameters training (GPML by Rasmussen)
+        \item \uv{stronger finish}
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    {\Large Thank you! }
+  \end{center}
+\end{frame}
+
+\end{document}
