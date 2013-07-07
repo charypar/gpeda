@@ -21,7 +21,7 @@
 % Or whatever. Note that the encoding and the font should match. If T1
 % does not look nice, try deleting the line with the fontenc.
 
-\usepackage[style=authoryear]{biblatex}
+% \usepackage[style=authoryear]{biblatex}
 \usepackage{hyperref}
 \usepackage{amssymb}
 
@@ -35,21 +35,22 @@
        {\setbeamertemplate{bibliography item}[article]}}%
   \usebeamertemplate{bibliography item}}
 
-\defbibenvironment{bibliography}
-  {\list{}
-     {\settowidth{\labelwidth}{\usebeamertemplate{bibliography item}}%
-      \setlength{\leftmargin}{\labelwidth}%
-      \setlength{\labelsep}{\biblabelsep}%
-      \addtolength{\leftmargin}{\labelsep}%
-      \setlength{\itemsep}{\bibitemsep}%
-      \setlength{\parsep}{\bibparsep}}}
-  {\endlist}
-  {\item}
+% \defbibenvironment{bibliography}
+%   {\list{}
+%      {\settowidth{\labelwidth}{\usebeamertemplate{bibliography item}}%
+%       \setlength{\leftmargin}{\labelwidth}%
+%       \setlength{\labelsep}{\biblabelsep}%
+%       \addtolength{\leftmargin}{\labelsep}%
+%       \setlength{\itemsep}{\bibitemsep}%
+%       \setlength{\parsep}{\bibparsep}}}
+%   {\endlist}
+%   {\item}
 
 % \addbibresource{bajer2013model.bib}
 \bibliography{bajer2013model}
 
 \newcommand{\xx}{\mathrm{\mathbf{x}}}
+\newcommand{\XX}{\mathrm{\mathbf{X}}}
 \newcommand{\yy}{\mathrm{\mathbf{y}}}
 \newcommand{\ttheta}{\mathbf{\theta}}
 \newcommand{\eell}{\boldsymbol\ell}
@@ -87,7 +88,7 @@
 
 % \subject{Theoretical Computer Science}
 % % This is only inserted into the PDF information catalog. Can be left
-% % out. 
+% % out.
 
 % If you have a file called "university-logo-filename.xxx", where xxx
 % is a graphic format that can be processed by latex or pdflatex,
@@ -114,7 +115,7 @@
 
 
 % If you wish to uncover everything in a step-wise fashion, uncomment
-% the following command: 
+% the following command:
 
 %\beamerdefaultoverlayspecification{<+->}
 
@@ -133,7 +134,7 @@
 
 % Structuring a talk is a difficult task and the following structure
 % may not be suitable. Here are some rules that apply for this
-% solution: 
+% solution:
 
 % - Exactly two or three sections (other than the summary).
 % - At *most* three subsections per section.
@@ -201,7 +202,7 @@
   what can help:
   \begin{itemize}
     \item utilize already measured values \\
-      (at least do not measure anything again)
+      (at least prevent measuring the same thing twice)
     \item learn the shape of the function landscape \\
       or learn the (global) gradient or step direction \& size
   \end{itemize}
@@ -217,7 +218,7 @@
   \begin{enumerate}
     \item Surrogate modelling
     \item Estimation of Distribution Algorithms (EDA's)
-    \item Efficient Global Optimization (EGO)~\footfullcite{jones_efficient_1998}
+%    \item Efficient Global Optimization (EGO)~\footfullcite{jones_efficient_1998}
   \end{enumerate}
 \end{frame}
 
@@ -227,7 +228,7 @@
   \begin{itemize}
     \item technique which builds an \alert{approximating model} \\
       of the fitness function landscape
-    \item such model provides us with \alert{cheap and fast} \\
+    \item the model provides a \alert{cheap and fast} \\
       replacement of the fitness function
     \item evaluation of \blue{part} of the population/generations \\ with the \blue{original
       function} is necessary, but \alert{larger populations} or longer runs are possible
@@ -242,7 +243,7 @@
   \begin{itemize}
     \item the model represents a \alert{distribution} of solutions \\ in the \blue{input space}
     \item new candidate solutions are generated via \\ \alert{sampling the model}
-    \item better solutions are selected for being represented \\ by the model in the next generation 
+    \item better solutions are selected for being represented \\ by the model in the next generation
   \end{itemize}
 \end{frame}
 
@@ -286,7 +287,7 @@
   \begin{columns}[T]
   \column{5cm}
     \begin{itemize}
-      \item the resulting output for a specified point $\xx$ is a 1-D Gaussian with
+      \item the resulting output for a specified input $\xx$ is a 1-D Gaussian with
         \begin{itemize}
           \item \blue{mean} at the predicted value
           \item \blue{standard deviation} expressing uncertainty of this prediction
@@ -320,9 +321,9 @@
   \begin{enumerate}
     \item initialize random sample and build the GP model
     \item $\xx_\mathrm{max} \leftarrow$ maximize $\mathrm{PoI}(\xx)$
-    \item evaluate this found $\xx_\mathrm{max}$
+    \item evaluate found $\xx_\mathrm{max}$
     \item rebuild the GP model including the new data
-    \item goto step 2
+    \item repeat from step 2
   \end{enumerate}
   \vskip 2ex
   maximizing the $\mathrm{PoI}$ is a way of \blue{balancing} between \alert{exploration} of the input space and \alert{exploitation} of the local optima
@@ -336,16 +337,41 @@
   \frametitle{Model Guided Sampling Optimization}
   \textbf{main idea}:
   \begin{itemize}
-    \item consider the PoI...
+    \item consider the PoI to be a function proportional to a probability density
+    \item sample this density to get a population of candidate solution
   \end{itemize}
+  \textbf{motivation}: not getting trapped in local minima while exploring the search space
 \end{frame}
 
 \begin{frame}
-  \frametitle{}
+  \frametitle{Model Guided Sampling Optimization}
+
+  \textbf{MGSO}
+  \begin{enumerate}
+    \item generate a random initial sample and evaluate it resulting in a dataset $D$
+    \item build a GP model $\hat{f}$ using $D$
+    \item sample the PoI resulting in a new population $P$
+    \item find the minimum $\xx_{\min} = \arg\min \hat{f}(\xx)$ of the GP and add to $P$
+    \item evaluate all $\xx \in P$
+    \item $D = D \cup P$
+    \item repeat from 2
+  \end{enumerate}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Gaussian Processes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Gaussian Process}
   \begin{itemize}
-    \item
+    \item GP is a stochastic approximation method based on Gaussian distributions
+    \item let \newline
+        $\XX = \{\xx_1, \dots, \xx_N\}$ \dots N training data points
+        $\yy = \{y_1, \dots, y_N \}, \quad y_i = f(\xx_i)\ $ \dots measured function values
   \end{itemize}
 \end{frame}
+
 
 \end{document}
 
