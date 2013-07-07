@@ -23,6 +23,7 @@
 
 \usepackage[style=authoryear]{biblatex}
 \usepackage{hyperref}
+\usepackage{amssymb}
 
 \setbeamertemplate{bibliography item}{%
   \ifboolexpr{ test {\ifentrytype{book}} or test {\ifentrytype{mvbook}}
@@ -53,6 +54,7 @@
 \newcommand{\ttheta}{\mathbf{\theta}}
 \newcommand{\eell}{\boldsymbol\ell}
 \newcommand{\uv}[1]{\quotedblbase #1\textquotedblleft}
+\newcommand{\blue}[1]{{\color{blue} #1}}
 
 \title[MGSO with Gaussian Processes for Black-Box Opt.
   \hspace{4em}\insertframenumber] % (optional, use only with long paper titles)
@@ -153,7 +155,7 @@
   \begin{itemize}[<+->]
     \item optimization of black-box functions
       \begin{figure}
-      \includegraphics[width=0.6\linewidth]{img/black-box-function}
+      \includegraphics[width=0.4\linewidth]{img/black-box-function}
       % \caption{}
       \end{figure}
     \item in continuous domain: $\xx \in \mathbb{R}^D$
@@ -179,6 +181,10 @@
   \begin{itemize}
     \item find a solution $\xx$ with the smallest function \\
       value $f(\xx)$ as possible (WLOG, we consider \emph{minimization})
+    \item \textbf{optimization} (minimization) is finding such $\xx^\star \in \mathbb{R}^D$ that
+      \begin{displaymath}
+        f(\xx^\star) = \min_{\forall \xx \in \mathbb{R}} f(\xx)
+      \end{displaymath}
     \item use reasonable small number of function evaluations \\
       (the lower the better)
   \end{itemize}
@@ -188,7 +194,7 @@
   \frametitle{EA's for expensive black-box optimization}
   \begin{itemize}
     \item EA's often manage to \alert{escape} from \alert{local optima}
-    \item but use usually \alert{many} function \alert{evaluations}
+    \item but usually use \alert{many} function \alert{evaluations}
   \end{itemize}
   \vskip 2ex
   \pause
@@ -200,6 +206,8 @@
       or learn the (global) gradient or step direction \& size
   \end{itemize}
 \end{frame}
+
+\subsection{Model-based methods}
 
 \begin{frame}
   \frametitle{Model-based methods accelerating the convergence}
@@ -221,26 +229,103 @@
       of the fitness function landscape
     \item such model provides us with \alert{cheap and fast} \\
       replacement of the fitness function
-    \item generation of the new points guided by EA \\
+    \item evaluation of \blue{part} of the population/generations \\ with the \blue{original
+      function} is necessary, but \alert{larger populations} or longer runs are possible
+    \item generation of the points guided by EA \\
       (crossover, mutation,\ldots)
   \end{itemize}
 \end{frame}
 
 \begin{frame}
   \frametitle{Estimation of Distribution Algorithms (EDA)}
-  \textbf{Estimation of Distribution Algorithms}:
+  \textbf{Estimation of Distribution Algorithms}
   \begin{itemize}
-    \item the model represents a distribution of solutions in the \alert{input space}
-    \item new candidate solutions are generated via sampling the model
-    \item better solutions are selected for the next generation 
+    \item the model represents a \alert{distribution} of solutions \\ in the \blue{input space}
+    \item new candidate solutions are generated via \\ \alert{sampling the model}
+    \item better solutions are selected for being represented \\ by the model in the next generation 
+  \end{itemize}
+\end{frame}
+
+\subsection{EGO}
+
+\begin{frame}
+  \frametitle{Efficient Global Optimization (EGO)}
+  \begin{columns}[T]
+  \column{5cm}
+    \textbf{EGO} % \footfullcite{jones_efficient_1998}
+    \begin{itemize}
+      \item<1-> \textbf{needed}: specific kind of surrogate model which can express \alert{uncertainty of the prediction} in a new point
+      \item<1-> EGO uses Kriging / Gaussian processes (GP)
+      \item<2-> for any given input $\xx$\invisible<2>{, it gives a \alert{probability distribution} of the output value}
+    \end{itemize}
+  \column{5.5cm}
+    \only<1>{
+      \begin{figure}
+      \includegraphics[width=\linewidth]{img/gp1}
+      % \caption{}
+      \end{figure}
+    }
+    \only<2>{
+      \begin{figure}
+      \includegraphics[width=\linewidth]{img/gp2-candidate}
+      % \caption{}
+      \end{figure}
+    }
+    \only<3>{
+      \begin{figure}
+      \includegraphics[width=\linewidth]{img/gp3-gauss}
+      % \caption{}
+      \end{figure}
+    }
+    \vskip 5cm
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Efficient Global Optimization (EGO)}
+  \begin{columns}[T]
+  \column{5cm}
+    \begin{itemize}
+      \item the resulting output for a specified point $\xx$ is a 1-D Gaussian with
+        \begin{itemize}
+          \item \blue{mean} at the predicted value
+          \item \blue{standard deviation} expressing uncertainty of this prediction
+        \end{itemize}
+    \end{itemize}
+  \column{5.5cm}
+    \only<1>{
+      \begin{figure}
+      \includegraphics[width=\linewidth]{img/gp3-gauss}
+      % \caption{}
+      \end{figure}
+    }
+    \only<2->{
+      \begin{figure}
+      \includegraphics[width=\linewidth]{img/gp4-poi}
+      % \caption{}
+      \end{figure}
+    }
+  \end{columns}
+  \begin{itemize}
+    \item<2-> \alert{probability of improvement} ($\mathrm{PoI}$) is the probability that the function value will be lower than a specified \blue{target $T$}
+      \begin{displaymath}
+        \mathrm{PoI}_\blue{T}(\xx) = \Phi \left( \frac{\blue{T} - \hat{f}(\xx)}{\hat{\sigma}(\xx)} \right) = \mathrm{P}(\hat{f}(\xx) \leqq \blue{T})
+      \end{displaymath}
   \end{itemize}
 \end{frame}
 
 \begin{frame}
-  \frametitle{}
-  \begin{itemize}
-    \item
-  \end{itemize}
+  \frametitle{Efficient Global Optimization (EGO)}
+  \textbf{EGO}
+  \begin{enumerate}
+    \item initialize random sample and build the GP model
+    \item $\xx_\mathrm{max} \leftarrow$ maximize $\mathrm{PoI}(\xx)$
+    \item evaluate this found $\xx_\mathrm{max}$
+    \item rebuild the GP model including the new data
+    \item goto step 2
+  \end{enumerate}
+  \vskip 2ex
+  maximizing the $\mathrm{PoI}$ is a way of \blue{balancing} between \alert{exploration} of the input space and \alert{exploitation} of the local optima
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
