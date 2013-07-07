@@ -54,6 +54,10 @@
 \newcommand{\yy}{\mathrm{\mathbf{y}}}
 \newcommand{\ttheta}{\mathbf{\theta}}
 \newcommand{\eell}{\boldsymbol\ell}
+\newcommand{\R}{\mathrm{\mathbb{R}}}
+\newcommand{\CC}{\mathrm{\mathbf{C}}}
+\newcommand{\KK}{\mathrm{\mathbf{K}}}
+\newcommand{\II}{\mathrm{\mathbf{I}}}
 \newcommand{\uv}[1]{\quotedblbase #1\textquotedblleft}
 \newcommand{\blue}[1]{{\color{blue} #1}}
 
@@ -367,11 +371,47 @@
   \begin{itemize}
     \item GP is a stochastic approximation method based on Gaussian distributions
     \item let \newline
-        $\XX = \{\xx_1, \dots, \xx_N\}$ \dots N training data points
+        $\XX = \{\xx_1, \dots, \xx_N\}$ \dots $N$ training data points
         $\yy = \{y_1, \dots, y_N \}, \quad y_i = f(\xx_i)\ $ \dots measured function values
+    \item $\yy \in \R^N$ considered to be a realisation of a \blue{$N$-dimensional} Gaussian distribution
+        with a covariance matrix $\CC$ and zero mean.
   \end{itemize}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Gausian Process covariance}
+  \begin{itemize}
+    \item covariance $\CC$ is given by \newline
+        $\CC = \KK + \sigma^2 \II$ \newline
+        $(\KK)_{ij} = cov(\xx_i, \xx_j) = \theta \exp(\frac{-1}{2\ell^2} (\xx_i - \xx_j)^\top (\xx_i - \xx_j)) $
+    \item $\theta$ is the \blue{signal variance} and $\ell$ is the \blue{characteristic length scale} and $\sigma^2$
+        is the \blue{signal noise}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Gaussian Process prediction}
+  \textbf{Making predictions}
+  \begin{itemize}
+    \item prediction $y^*$ in a new point $\xx^*$ is made by taking an $(N+1)$-dimensional
+        Gaussian distribution with density \newline
+        $p(\yy_{N+1} | \XX_{N+1})$
+  \end{itemize}
+
+  \begin{columns}[T]
+  \column{5.5cm}
+    \begin{itemize}
+    \item since $\yy_N$ is known, we get a \alert{1D density} of $y^*$ by marginalization
+        $$p(y^* | \XX_{N+1}, \yy_N)$$
+        which is a 1D Gaussian distribution in $\xx^*$
+    \end{itemize}
+  \column{4.5cm}
+    \begin{figure}
+    \includegraphics[width=\linewidth]{img/gp3-gauss}
+    % \caption{}
+    \end{figure}
+  \end{columns}
+\end{frame}
 
 \end{document}
 
