@@ -17,8 +17,8 @@
 
 \begin{document}
 
-\title{Sampling Methods for Model Guided Sampling Optimization
-  with Gaussian Processes}
+\title{Improving the Model Guided Sampling Optimization
+  by Local Search and Slice Sampling}
 
 \author{Lukáš Bajer\inst{1,2} \and Martin Holeňa\inst{2} \and Viktor Charypar \inst{3}}
 
@@ -37,7 +37,7 @@ Trojanova 13, 120 00 Prague 2, Czech Republic \\
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Model Guided Sampling Optimization (MGSO) was recently proposed as an alternative for Jones' Kriging-based EGO algorithm for optimization of expensive black-box functions. Instead of maximizing a chosen criterion (e.g. expected improvement), MGSO samples probability of improvement forming multiple candidates -- a~whole population of suggested solutions. This paper tackles problems with such sampling, it compares different sampling methods and brings a new version of the MGSO algorithm.
+Model Guided Sampling Optimization (MGSO) was recently proposed as an alternative for Jones' Kriging-based EGO algorithm for optimization of expensive black-box functions. Instead of maximizing a chosen criterion (e.g. expected improvement), MGSO samples probability of improvement of the Gaussian process model forming multiple candidates -- a~whole population of suggested solutions. This paper further develops this algorithm using slice sampling method and local continuous optimization of the Gaussian process model.
 \end{abstract}
 
 \section{Introduction}
@@ -46,67 +46,81 @@ Optimization of expensive empirical functions forms an important topic in many e
 % Such empirical functions 
 They are usually very expensive to evaluate; one evaluation may cost a lot of time and money to process.
 
-Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, functions of this kind are usually characterized by a high number of local optima where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been evolved. Even though these methods are slow and computational intensive, the cost of the evaluation of the empirical objective function is always much higher, and so the number of function evaluations is the parameter which is crucial to decrease as much as possible.
+Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, functions of this kind are usually characterized by a high number of local optima where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been evolved. Even though these methods are slow and computationaly intensive, the cost of the evaluation of the empirical objective function is always much higher, and so it is cructial to decrease the number of function evaluations as much as possible.
 % and the cost of these evaluations dominates the computational cost of the optimization algorithm.
 
-Evolutionary algorithms constitute a broad family of meta-heuristics that are used for black-box optimization very frequently. Some kinds of these algorithms or some techniques are designed to spent for the optimization as few objective function evaluations as possible -- all of the three following approaches use some kind of model being built and updated within the optimization process.
+Evolutionary algorithms constitute a broad family of meta-heuristics that are used for black-box optimization very frequently. Some of these algorithms and techniques are designed to spend as few objective function evaluations for the optimization as possible. All of the three following approaches use a model (of a different type in each case), which is built and updated within the optimization process.
 
 \emph{Estimation of distribution algorithms} (EDAs) \cite{larranaga_estimation_2002} represent one such approach: EDAs iteratively estimate the probabilistic distribution of selected candidate solutions (usually better than some threshold) and sample this distribution forming a new set of solutions for the next iteration. 
 
 \emph{Surrogate modelling} is a technique of construction and usage of a regression model of the objective function~\cite{jin_comprehensive_2005}. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
 
-Our method, \emph{Model Guided Sampling Optimization} (MGSO), is based on both these approaches. It is similar to Jones' Efficient Global Optimization (EGO)~\cite{jones_efficient_1998}: like EGO, MGSO uses a Gaussian process (GP, see~\cite{rasmussen_gaussian_2006} for reference), which provides a guide where to sample new candidate solutions in order to explore new solutions and exploit promising areas of the objective-function landscape. EGO evaluates a solution where a chosen criterion, Expected Improvement (EI) or Probability of Improvement (PoI) is maximized. Hennig in his recent work~\cite{hennig_entropy_2012} examines more criteria in detail. On the other hand, MGSO samples GP model's latter criterion -- PoI, producing a set of new points. At the same time, the GP serves as a surrogate model of the objective function for some of the solutions. During each iteration, MGSO samples the model's PoI forming a population of new candidate solutions, evaluates them and updates the GP model with the new gathered data.
+Our method, \emph{Model Guided Sampling Optimization} (MGSO), takes inspiration from both these approaches. It uses a regression model of the objective function which also provides an error estimate. However, instead of replacing the objective function with this model for some of the evaluations, it combines its prediction and the error estimate to get a probability of reaching a better solution in a given point. Similarly to EDAs, it then samples this pseudo-distribution\footnote{a function proportional to a probability distribution, it's value is given by the \emph{probability of improvement}, see Section~\ref{sec:sampling}} to obtain the next set of solution candidates.
 
-This paper follows up to the previous brief introduction of MGSO~\cite{bajer_model_2013}. Instead of Gibbs' sampling, it uses slice sampling introduced by Neal~\cite{neal_slice_2003} which enables computationally cheaper sampling in higher dimensions. Further, the GP model is used as a surrogate model more often which brings faster convergence. The following section introduces methods used in the MGSO, Section \ref{sec:mgso} describes the MGSO algorithm and the Section \ref{sec:results} brings some preliminary results on the BBOB testing set~\cite{hansen_real_2009}.
+MGSO is similar to Jones' Efficient Global Optimization (EGO)~\cite{jones_efficient_1998}.
+% like EGO, MGSO uses a Gaussian process (GP, see~\cite{rasmussen_gaussian_2006} for reference), which provides a guide where to sample new candidate solutions in order to explore new solutions and exploit promising areas of the objective-function landscape.
+Where EGO selects a single solution maximizing a chosen criterion -- Expected Improvement (EI) or Probability of Improvement (PoI) -- MGSO \emph{samples} the latter criterion. Hennig in his recent work~\cite{hennig_entropy_2012} examines more criteria in detail. 
+% On the other hand, MGSO samples GP model's latter criterion -- PoI.
+% , producing a set of new points.
+At the same time, the GP serves as a surrogate model of the objective function for small number of the solutions. In the second version of MGSO, presented in this paper, this local optimization is used in every generation of the optimization whereas the previous version employed local optimization only to improve the final optimum.
+% During each iteration, MGSO samples the model's PoI forming a population of new candidate solutions, evaluates them and updates the GP model with the new gathered data.
+
+This paper extends the previous brief introduction of MGSO~\cite{bajer_model_2013} (MGSOv1). Instead of Gibbs' sampling, it uses slice sampling introduced by Neal~\cite{neal_slice_2003}. This enables computationally cheaper sampling and works even in higher dimensions where Gibbs sampling fails. Further, the GP model is used as a surrogate model more often which brings faster convergence in the number of function evaluations. The following section introduces methods used in the MGSO, Section \ref{sec:mgso} describes the MGSO algorithm and the Section \ref{sec:results} brings some preliminary results on the BBOB testing set~\cite{hansen_real_2009}.
 
 
 \section{Involved Methods}
 
 \subsection{Gaussian Processes}
 
-Gaussian process~\cite{rasmussen_gaussian_2006} is a probabilistic model based on Gaussian distributions. 
-% It is specified by covariance and mean function and relatively small number of hyper-parameters. 
-It is specified by mean and covariance functions and relatively small number of covariance function's hyper-parameters. 
-% The hyper-parameters are set in such way that the likelihood of the function value given the values of the decision variables is maximized for the training data points.
-The hyper-parameters are set by the maximum-likelihood method.
+Gaussian process~\cite{rasmussen_gaussian_2006} is a probabilistic model based on Gaussian distributions. This type of model was chosen because it predicts the function value in a new point in the form of univariate Gaussian distribution: the mean and the standard deviation of the function value are provided. Through the predicted mean, the GP can serve as a surrogate model, and the standard deviation is an estimate of uncertainty of the prediction in a specified point.
 
-The GP model can predict the function value in a new point in the form of univariate Gaussian distribution: the GP provides mean and the standard deviation of the function value. Through the predicted mean, the GP can serve as a surrogate model, and standard deviation is a measure of uncertainty of the prediction in a specified point.
+The GP is specified by mean and covariance functions and relatively small number of covariance function's hyper-parameters. The hyper-parameters are fitted by the maximum-likelihood method.
 
-Let $\XX_N = \{\xx_i \ | \ \xx_i \in \mathbb{R}^{D}\}_{i=1}^{N}$ be a set of $N$ training $D$-dimensional data points with known dependent-variable values $\yy = \{y_i\}_{i=1}^{N}$ and $f(\xx)$ be an unknown function being modelled for which $f(\xx_i) = y_i$ for all $i \in \{1,\ldots,N\}$. The GP model imposes a probabilistic model on the data: the vector of known function values $\yy_N$ is considered as one sample of a $N$-dimensional multivariate Gaussian distribution with probability density $p(\yy \, | \, \XX_N)$. If we add a new data point $(\xx_{N+1}, y_{N+1})$, the probability density is, according to B\"{u}che \cite{buche_accelerating_2005},
+Let $\XX_N = \{\xx_i \ | \ \xx_i \in \mathbb{R}^{D}\}_{i=1}^{N}$ be a set of $N$ training $D$-dimensional data points with known dependent-variable values $\yy_N = \{y_i\}_{i=1}^{N}$ and $f(\xx)$ be an unknown function being modelled for which $f(\xx_i) = y_i$ for all $i \in \{1,\ldots,N\}$. The GP model imposes a probabilistic model on the data: the vector of known function values $\yy_N$ is considered to be a sample of a $N$-dimensional multivariate Gaussian distribution with probability density $p(\yy_N \, | \, \XX_N)$. If we take into consideration a new data point $(\xx_{N+1}, y_{N+1})$, the new probability density is
 \begin{equation}
 p(\yy_{N+1} \, | \, \XX_{N+1}) = \frac { \exp(-\frac{1}{2} \yy^\top_{N+1} \CC^{-1}_{N+1} \yy_{N+1}) } { \sqrt{(2\pi)^{N+1} \det(\CC_{N+1})} }
 \end{equation}
-where $\CC_{N+1}$ is the covariance matrix of the Gaussian distribution (for which mean is usually set to constant zero). This covariance can be written as
+where $\CC_{N+1}$ is the covariance matrix of the Gaussian distribution (for which mean is usually set to constant zero) and 
+$\yy_{N+1} = \{y_1,\ldots,y_N, y_{N+1}\}$ (see \cite{buche_accelerating_2005} for details). This covariance can be written as
 \begin{equation}
 \CC_{N+1} = \left( \begin{array}{cc} \CC_N & \mathbf{k} \\ \mathbf{k}^\top & \kappa \end{array} \right)
 \end{equation}
-where $\CC_N$ is the covariance of the Gaussian distribution given the $N$ training data points, $\mathbf{k}$ is a vector containing covariances between the new point and training data, and $\kappa$ is the variance of the new point itself. Further, inverse $\CC^{-1}_{N-1}$ of the extended covariance can be expressed using inverse of the training covariance $\CC^{-1}_N$ which simplifies density of the distribution in a new point to a univariate Gaussian with density
+where $\CC_N$ is the covariance of the Gaussian distribution given the $N$ training data points, $\mathbf{k}$ is a vector of covariances between the new point and training data, and $\kappa$ is the variance of the new point itself.
+
+Predictions in Gaussian processes are made using Bayesian inference. Since the inverse $\CC^{-1}_{N+1}$ of the extended covariance matrix can be expressed using inverse of the training covariance $\CC^{-1}_N$ and $\yy_N$ is known, the density of the distribution in a new point simplifies to a univariate Gaussian with density
 \begin{equation}
-p(y_{N+1} \, | \, \XX_{N+1}, \yy_N) \ \varpropto \ \exp \left( -\frac{1}{2} \frac {(y_{N+1} - \hat{y}_{N+1})^2} {\sigma^2_{y_{N+1}}} \right)
-\label{univariate-density}.
+p(y_{N+1} \, | \, \XX_{N+1}, \yy_N) \ \varpropto \ \exp \left( -\frac{1}{2} \frac {(y_{N+1} - \hat{y}_{N+1})^2} {s^2_{y_{N+1}}} \right)
+\label{univariate-density}
 \end{equation}
 with mean and variance given by
 \begin{eqnarray}
 \hat{y}_{N+1} & = & \mathbf{k}^\top \CC^{-1}_N \yy_N, \\
-\sigma^2_{y_{N+1}} & = & \kappa - \mathbf{k}^\top \CC^{-1}_N \mathbf{k}.
+s^2_{y_{N+1}} & = & \kappa - \mathbf{k}^\top \CC^{-1}_N \mathbf{k}.
 \end{eqnarray}
 Further details can be found in \cite{buche_accelerating_2005}.
 
-The covariances $\CC_N$ plays a crucial role in these equations. Gaussian processes use parametrized covariance functions $C$ describing prior assumptions on the shape of the modeled function. The covariance between the function values at two data points $\xx_p$ and $\xx_q$ is given by $C(\xx_p, \xx_q)$ which forms also the $(p,q)$-th element of the matrix $\CC_N$. In our case, we used the most common squared-exponential function
+The covariance $\CC_N$ plays a crucial role in these equations. It is defined by the covariance-function matrix $\mathbf{K}$ and signal noise $\sigma$ as
 \begin{equation}
-C(\xx_p, \xx_q) = \theta_1 \exp \left( -\frac{1}{2} \sum^D_{i=1} \frac{(x^i_p - x^i_q)^2} {2l^2} \right) + \theta_2 + \delta_{p,q}\theta_3
+  \CC_N = \mathbf{K}_N + \sigma \mathbf{I}_N
 \end{equation}
-which is suitable when the modelled function is rather smooth. The closer the points $\xx_p$ and $\xx_q$ are, the closer the covariance function value is to 1 and the stronger correlation between function values $f(\xx_p)$ and $f(\xx_q)$ is. The hyper-parameter $\theta_1$ scales this correlation, $\theta_2$ rises the value from zero and $\theta_3$ means a white noise of the diagonal elements of the matrix. The last parameter $l$ is the length-scale with which the distance of two considered data points is compared. Estimate of these hyper-parameters can be supplied by the user and the final value is usually learnt using maximum-likelihood approach.
+where $\mathbf{I}$ is an identity matrix of order $N$. Gaussian processes use parametrized covariance functions $K$ describing prior assumptions on the shape of the modeled function. The covariance between the function values at two data points $\xx_i$ and $\xx_j$ is given by $K(\xx_i, \xx_j)$ which forms the $(i,j)$-th element of the matrix $\mathbf{K}_N$ as well. In our case, we used the most common squared-exponential function
+\begin{equation}
+K(\xx_i, \xx_j) = \theta \exp \left( -\frac{1}{2\ell^2} (\xx_i - \xx_j)^\top(\xx_i - \xx_j) \right), % + \theta_2
+\end{equation}
+which is suitable when the modelled function is rather smooth. The closer the points $\xx_i$ and $\xx_j$ are, the closer the covariance function value is to 1 and the stronger correlation between function values $f(\xx_i)$ and $f(\xx_j)$ is. The signal variance $\theta$ scales this correlation
+% , $\theta_2$ rises the value from zero and $\theta_3$ means a white noise of the diagonal elements of the matrix.
+and the parameter $\ell$ is the characteristic length-scale with which the distance of two considered data points is compared. Our choice of the covariance function was motivated by its simplicity and the possibility of finding the hyper-parameter values by maximum-likelihood method. 
 
 
 \subsection{Sampling}
+\label{sec:sampling}
 
-The core of the MGSO algorithm is made by sampling of the probability of improvement. This measure is, for a chosen threshold $T$ of the function value, directly given by the predicted mean $\hat{f}(\xx) = \hat{y}$ and the standard deviation $\hat{\sigma}(\xx) = \sigma_{y}$ of the GP model $\hat{f}$ in any point $\xx$ of the input space
+The core step of the MGSO algorithm is the sampling of the probability of improvement. This measure is, for a chosen threshold $T$ of the function value, directly given by the predicted mean $\hat{f}(\xx) = \hat{y}$ and the standard deviation $\hat{s}(\xx) = s_{y}$ of the GP model $\hat{f}$ in any point $\xx$ of the input space
 \begin{equation}
-  \mathrm{PoI}_T(\xx) = \mathrm{\Phi}\left( \frac{T - \hat{f}(\xx)}{\hat{\sigma}(\xx)} \right) = \mathrm{P}(\hat{f}(\xx) \leqq T)
+  \mathrm{PoI}_T(\xx) = \mathrm{\Phi}\left( \frac{T - \hat{f}(\xx)}{\hat{s}(\xx)} \right) = \mathrm{P}(\hat{f}(\xx) \leqq T)
 \end{equation}
-which corresponds to the value of cumulative distribution function (CDF) of the Gaussian with already mentioned density (\ref{univariate-density}). Even though all the variables come from Gaussian distribution, $\mathrm{PoI}(\xx)$ is definitely not Gaussian-shaped since it depends on the threshold $T$ and the function being modeled $f$ -- typical example of the landscape of $\textrm{PoI}(\xx)$ in two dimensions for Rastrigin function is depicted in Fig.\,1 % THIS DOES NOT WORK :( \ref{fig:poi}.
-The dependency on the modelled function causes also no analytical marginals, derivatives or conditional probabilities of this density.
+which corresponds to the value of cumulative distribution function (CDF) of the Gaussian with density (\ref{univariate-density}). Even though all the variables come from Gaussian distribution, $\mathrm{PoI}(\xx)$ is definitely not Gaussian-shaped since it depends on the threshold $T$ and the function being modeled $f$ -- typical example of the landscape of $\textrm{PoI}(\xx)$ in two dimensions for Rastrigin function is depicted in Fig.\,\ref{fig:poi}.
+The dependency on the modeled function also causes a lack of analytical marginals, derivatives or conditional probability densities.
 
 \begin{figure}
   \centering
@@ -120,17 +134,17 @@ The dependency on the modelled function causes also no analytical marginals, der
 
 \paragraph{Gibbs' sampler.}
 
-The first version of MGSO~\cite{bajer_model_2013} used Gibbs' sampler~\cite{geman_stochastic_1984}. The sampler starts at some point of the input space $\xx_s$. Further, it moves along each dimension to a new point $\xx'$: it cycle successively through each individual dimension $k = 1,\ldots,D$ by assessing its value through sampling from conditional probability of this variable given values of the remaining ones: for $k=1,\ldots,D$
+The first version of MGSO~\cite{bajer_model_2013} used Gibbs' sampler~\cite{geman_stochastic_1984}. The sampler starts at some point of the input space $\xx_s$. Further, it moves along each dimension to a new point $\xx'$: it cycles successively through each individual dimension $x_k$ of $\xx, k = 1,\ldots,D$ and samples from conditional probability of $x_k$ given values of the remaining $x_{j \neq k}$: for $k=1,\ldots,D$
 \begin{equation}
-X^k \sim p(X^k \, | \, \{X^j = x^j, j \neq k)\}).
+X_k \sim p(X_k \, | \, \{X_j = x_j, j \neq k)\}).
 \end{equation}
-As no analytical expression for these conditionals exists, inverse of the empirical conditional CDF's $F^{-1}_k$ was used to transform samples from uniform distributions
+As no analytical expression for these conditionals exists, piece-wise linear inverse of the empirical conditional CDF's $F^{-1}_k$ was used to transform samples from uniform distributions
 \begin{displaymath}
-u^k \sim U(0,1), \quad  x^k = F^{-1}_k(u_k).
+u_k \sim U(0,1), \quad  x_k = F^{-1}_k(u_k).
 \end{displaymath}
 Linear interpolation between values of the empirical CDF was computed at the 20-points grid.
 
-Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard deviation $\hat{\sigma}(\xx)$ for 20 points requires only two calls of GP model prediction, the complexity of sampling rises quickly with the number of variables $D$ which causes sampling in more than three dimensions being extremely slow.
+Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard deviation $\hat{s}(\xx)$ for 20 points requires only two calls of GP model prediction, the complexity of sampling rises quickly with the number of variables $D$ which causes sampling in more than three dimensions being extremely slow.
 
 \paragraph{Slice sampling.}
 
@@ -150,7 +164,7 @@ Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard dev
   \STATE $\mathbf{R} \leftarrow \mathbf{L} + \mathbf{w}$   \hspace{\fill}  \COMMENT{upper bound}
   % \STATE $\mathbf{L},\mathbf{R} \leftarrow$ lower/upper bounds of a hyper-rectangle $\mathbf{H}$ \\
   % \quad $\xx_k \in \mathbf{H}, \quad R_j - L_j = w_j \ \forall j = 1,\ldots,D$
-  \WHILE {given number of tries has not exceeded}
+  \WHILE {given number of tries has not been exceeded}
     \STATE $\mathbf{u} \sim U(0,1)^D$
     \STATE $\xx_{k+1} \leftarrow \mathbf{L} + \mathbf{u} \circ (\mathbf{R} - \mathbf{L})$ \hspace{\fill}  \COMMENT{$\xx_{k+1} \sim U(\mathbf{L},\mathbf{R})^D$}
     % \STATE $\xx_{k+1} \leftarrow$ random sample from the hyper-rectangle $[\mathbf{L}, \mathbf{R}]$
@@ -173,7 +187,11 @@ Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard dev
 \label{alg:slice}
 \end{algorithm}
 
-This novel kind of sampling brought by Neal~\cite{neal_slice_2003} is based on a simple and smart idea. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subset $S=\{\xx \in \mathbb{R}^D \,|\, f(\xx) > y\}$ which is stepwise approximated by a hyper-rectangle and uniformly sampled, forming a new point $\xx_1$. The approximation of the subset is dependent on the only parameter of this method, scale estimate $\mathbf{w} \in \mathbb{R}^D$, which does not affect correctness and its wrong guess decreases the speed of convergence only moderately. The sampler then starts again from the $(\xx_1, f(\xx_1))$ and continuously generates next points, see the pseudo-code in Alg.\,\ref{alg:slice}.
+This novel kind of sampling, brought by Neal~\cite{neal_slice_2003} in 2003, is based on a simple and smart idea. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subset $S=\{\xx \in \mathbb{R}^D \,|\, f(\xx) > y\}$ which is
+% stepwise approximated by a hyper-rectangle and
+uniformly sampled, forming a new point $\xx_1$. The sampler then starts again from the $(\xx_1, f(\xx_1))$ and iteratively generates next points.
+
+The subspace $S$ is approximated with an axis-aligned hyper-rectangle $H$ of size $\mathbf{w} \in \mathbb{R}$, randomly positioned around the current point $\xx$ and successively shrinked if a point inside $H$ but outside $S$ is sampled. The parameter $\mathbf{w}$ is the only parameter of this method. It should not be too small, but larger values do not affect correctness and the wrong guesses they cause only decrease the speed of convergence moderately. For details of this method, see the pseudo-code in Alg.\,\ref{alg:slice}. If the user-specified number of unsuccessful attempts of shrinking is exceeded, the slice sampling ends with an error, which possibly results in a lower number of individuals during that MGSO generation.
 
 Slice sampling has several advantages. First, it nicely scales with higher dimensionalities of the problem. Second, there is no need of conditional distributions as it is with Gibbs' sampler. Moreover, it does not require the density being normalized, which is the case of PoI. This kind of sampler is used in the second version of MGSO, described in this paper.
 
