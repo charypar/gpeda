@@ -17,8 +17,8 @@
 
 \begin{document}
 
-\title{Improving the Model Guided Sampling Optimization
-  by Local Search and Slice Sampling}
+\title{Improving the Model Guided Sampling Optimization \\
+  by Model Search and Slice Sampling}
 
 \author{Lukáš Bajer\inst{1,2} \and Martin Holeňa\inst{2} \and Viktor Charypar \inst{3}}
 
@@ -37,7 +37,7 @@ Trojanova 13, 120 00 Prague 2, Czech Republic \\
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Model Guided Sampling Optimization (MGSO) was recently proposed as an alternative for Jones' Kriging-based EGO algorithm for optimization of expensive black-box functions. Instead of maximizing a chosen criterion (e.g. expected improvement), MGSO samples probability of improvement of the Gaussian process model forming multiple candidates -- a~whole population of suggested solutions. This paper further develops this algorithm using slice sampling method and local continuous optimization of the Gaussian process model.
+Model Guided Sampling Optimization (MGSO) was recently proposed as an alternative for Jones' Kriging-based EGO algorithm for optimization of expensive black-box functions. Instead of maximizing a chosen criterion (e.g. expected improvement), MGSO samples probability of improvement of the Gaussian process model forming multiple candidates -- a~whole population of suggested solutions. This paper further develops this algorithm using slice sampling method and continuous local optimization of the Gaussian process model.
 \end{abstract}
 
 \section{Introduction}
@@ -46,12 +46,14 @@ Optimization of expensive empirical functions forms an important topic in many e
 % Such empirical functions 
 They are usually very expensive to evaluate; one evaluation may cost a lot of time and money to process.
 
-Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, functions of this kind are usually characterized by a high number of local optima where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been evolved. Even though these methods are slow and computationaly intensive, the cost of the evaluation of the empirical objective function is always much higher, and so it is cructial to decrease the number of function evaluations as much as possible.
+Because of the absence of the derivatives, standard continuous first- or second-order derivative optimization methods cannot be used. Further, functions of this kind are usually characterized by a high number of local optima where simple algorithms can be trapped easily. Therefore, different derivative-free optimization methods for black-box functions (often called meta-heuristics) have been proposed. Even though these methods are slow and computationaly intensive, the cost of the evaluation of the empirical objective function is always much higher, and so it is cructial to decrease the number of function evaluations as much as possible.
 % and the cost of these evaluations dominates the computational cost of the optimization algorithm.
 
-Evolutionary algorithms constitute a broad family of meta-heuristics that are used for black-box optimization very frequently. Some of these algorithms and techniques are designed to spend as few objective function evaluations for the optimization as possible. All of the three following approaches use a model (of a different type in each case), which is built and updated within the optimization process.
+Evolutionary algorithms constitute a broad family of meta-heuristics that are used for black-box optimization very frequently. Some of these algorithms and techniques are designed to minimize the number of objective function evaluations 
+% for the optimization
+All of the three following approaches use a model (of a different type in each case), which is built and updated within the optimization process.
 
-\emph{Estimation of distribution algorithms} (EDAs) \cite{larranaga_estimation_2002} represent one such approach: EDAs iteratively estimate the probabilistic distribution of selected candidate solutions (usually better than some threshold) and sample this distribution forming a new set of solutions for the next iteration. 
+\emph{Estimation of distribution algorithms} (EDAs) \cite{larranaga_estimation_2002} represent one such approach: EDAs iteratively estimate the probability distribution of selected candidate solutions (usually better than some threshold) and sample this distribution forming a new set of solutions for the next iteration. 
 
 \emph{Surrogate modelling} is a technique of construction and usage of a regression model of the objective function~\cite{jin_comprehensive_2005}. The model (called surrogate model in this context) is then used to evaluate some of the candidate solutions instead of evaluating them with the original costly function.
 
@@ -59,13 +61,13 @@ Our method, \emph{Model Guided Sampling Optimization} (MGSO), takes inspiration 
 
 MGSO is similar to Jones' Efficient Global Optimization (EGO)~\cite{jones_efficient_1998}.
 % like EGO, MGSO uses a Gaussian process (GP, see~\cite{rasmussen_gaussian_2006} for reference), which provides a guide where to sample new candidate solutions in order to explore new solutions and exploit promising areas of the objective-function landscape.
-Where EGO selects a single solution maximizing a chosen criterion -- Expected Improvement (EI) or Probability of Improvement (PoI) -- MGSO \emph{samples} the latter criterion. Hennig in his recent work~\cite{hennig_entropy_2012} examines more criteria in detail. 
+Where EGO selects a \emph{single solution} maximizing a chosen criterion -- Expected Improvement (EI) or Probability of Improvement (PoI) -- MGSO \emph{samples} the latter criterion. Hennig in his recent work~\cite{hennig_entropy_2012} examines more criteria in detail. 
 % On the other hand, MGSO samples GP model's latter criterion -- PoI.
 % , producing a set of new points.
-At the same time, the GP serves as a surrogate model of the objective function for small number of the solutions. In the second version of MGSO, presented in this paper, this local optimization is used in every generation of the optimization whereas the previous version employed local optimization only to improve the final optimum.
+At the same time, the GP serves as a surrogate model of the objective function for small number of the solutions. In the second version of MGSO, presented in this paper, this smooth optimization is used in every generation of the optimization whereas the previous version employed model optimization only to improve the final optimum.
 % During each iteration, MGSO samples the model's PoI forming a population of new candidate solutions, evaluates them and updates the GP model with the new gathered data.
 
-This paper extends the previous brief introduction of MGSO~\cite{bajer_model_2013} (MGSOv1). Instead of Gibbs' sampling, it uses slice sampling introduced by Neal~\cite{neal_slice_2003}. This enables computationally cheaper sampling and works even in higher dimensions where Gibbs sampling fails. Further, the GP model is used as a surrogate model more often which brings faster convergence in the number of function evaluations. The following section introduces methods used in the MGSO, Section \ref{sec:mgso} describes the MGSO algorithm and the Section \ref{sec:results} brings some preliminary results on the BBOB testing set~\cite{hansen_real_2009}.
+This paper extends the previous brief introduction of MGSO~\cite{bajer_model_2013}. Instead of Gibbs' sampling, it uses slice sampling introduced by Neal~\cite{neal_slice_2003}. This enables computationally cheaper sampling and works even in higher dimensions where Gibbs' sampling fails. Further, the GP model is used as a surrogate model more often which brings faster convergence in the number of function evaluations. The following section introduces methods used in the MGSO, Section~\ref{sec:mgso} describes the MGSO algorithm and the Section~\ref{sec:results} brings some preliminary results on the BBOB testing set~\cite{hansen_real_2009}.
 
 
 \section{Involved Methods}
@@ -115,11 +117,11 @@ and the parameter $\ell$ is the characteristic length-scale with which the dista
 \subsection{Sampling}
 \label{sec:sampling}
 
-The core step of the MGSO algorithm is the sampling of the probability of improvement. This measure is, for a chosen threshold $T$ of the function value, directly given by the predicted mean $\hat{f}(\xx) = \hat{y}$ and the standard deviation $\hat{s}(\xx) = s_{y}$ of the GP model $\hat{f}$ in any point $\xx$ of the input space
+The core step of the MGSO algorithm is the sampling of the probability of improvement. This probability is, for a chosen threshold $T$ of the function value, directly given by the predicted mean $\hat{f}(\xx) = \hat{y}$ and the standard deviation $\hat{s}(\xx) = s_{y}$ of the GP model $\hat{f}$ in any point $\xx$ of the input space
 \begin{equation}
   \mathrm{PoI}_T(\xx) = \mathrm{\Phi}\left( \frac{T - \hat{f}(\xx)}{\hat{s}(\xx)} \right) = \mathrm{P}(\hat{f}(\xx) \leqq T)
 \end{equation}
-which corresponds to the value of cumulative distribution function (CDF) of the Gaussian with density (\ref{univariate-density}). Even though all the variables come from Gaussian distribution, $\mathrm{PoI}(\xx)$ is definitely not Gaussian-shaped since it depends on the threshold $T$ and the function being modeled $f$ -- typical example of the landscape of $\textrm{PoI}(\xx)$ in two dimensions for Rastrigin function is depicted in Fig.\,\ref{fig:poi}.
+which corresponds to the value of cumulative distribution function (CDF) of the Gaussian with density (\ref{univariate-density}) for the value of threshold $T$. Even though all the variables come from Gaussian distribution, $\mathrm{PoI}(\xx)$ is definitely not Gaussian-shaped since it depends on the threshold $T$ and the function being modeled $f$ -- typical example of the landscape of $\textrm{PoI}(\xx)$ in two dimensions for Rastrigin function is depicted in Fig.\,\ref{fig:poi}.
 The dependency on the modeled function also causes a lack of analytical marginals, derivatives or conditional probability densities.
 
 \begin{figure}
@@ -138,7 +140,7 @@ The first version of MGSO~\cite{bajer_model_2013} used Gibbs' sampler~\cite{gema
 \begin{equation}
 X_k \sim p(X_k \, | \, \{X_j = x_j, j \neq k)\}).
 \end{equation}
-As no analytical expression for these conditionals exists, piece-wise linear inverse of the empirical conditional CDF's $F^{-1}_k$ was used to transform samples from uniform distributions
+As no analytical expression for these conditionals exists, piece-wise linear inverses of the empirical conditional CDF's $F^{-1}_k$ was used to transform samples from uniform distributions
 \begin{displaymath}
 u_k \sim U(0,1), \quad  x_k = F^{-1}_k(u_k).
 \end{displaymath}
@@ -166,7 +168,7 @@ Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard dev
   % \quad $\xx_k \in \mathbf{H}, \quad R_j - L_j = w_j \ \forall j = 1,\ldots,D$
   \WHILE {given number of tries has not been exceeded}
     \STATE $\mathbf{u} \sim U(0,1)^D$
-    \STATE $\xx_{k+1} \leftarrow \mathbf{L} + \mathbf{u} \circ (\mathbf{R} - \mathbf{L})$ \hspace{\fill}  \COMMENT{$\xx_{k+1} \sim U(\mathbf{L},\mathbf{R})^D$}
+    \STATE $\xx_{k+1} \leftarrow \mathbf{L} + \mathbf{u} \circ (\mathbf{R} - \mathbf{L})$ \hspace{\fill}  \COMMENT{$\xx_{k+1} \sim U(\mathbf{L},\mathbf{R})$}
     % \STATE $\xx_{k+1} \leftarrow$ random sample from the hyper-rectangle $[\mathbf{L}, \mathbf{R}]$
     \IF {$(y < f(\xx_{k+1}))$}
       \STATE accept $\xx_{k+1}$ and exit the \emph{while} loop
@@ -187,11 +189,11 @@ Even though evaluating GP model's mean $\hat{y} = \hat{f}(\xx)$ and standard dev
 \label{alg:slice}
 \end{algorithm}
 
-This novel kind of sampling, brought by Neal~\cite{neal_slice_2003} in 2003, is based on a simple and smart idea. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subset $S=\{\xx \in \mathbb{R}^D \,|\, f(\xx) > y\}$ which is
+This novel kind of sampling, brought by Neal in 2003~\cite{neal_slice_2003}, is based on a simple and smart idea. Let $f$ be a function proportional to the density from which sampling is desired. It starts from a starting point $(\xx_0, f(\xx_0))$ where a uniform single-variable sample $y \sim U(0,f(\xx_0))$ is obtained. This number induces a subset $S=\{\xx \in \mathbb{R}^D \,|\, f(\xx) > y\}$ which is
 % stepwise approximated by a hyper-rectangle and
-uniformly sampled, forming a new point $\xx_1$. The sampler then starts again from the $(\xx_1, f(\xx_1))$ and iteratively generates next points.
+uniformly sampled, forming a new point $\xx_1$. The sampler then starts again from this point $(\xx_1, f(\xx_1))$ and iteratively generates next samples.
 
-The subspace $S$ is approximated with an axis-aligned hyper-rectangle $H$ of size $\mathbf{w} \in \mathbb{R}$, randomly positioned around the current point $\xx$ and successively shrinked if a point inside $H$ but outside $S$ is sampled. The parameter $\mathbf{w}$ is the only parameter of this method. It should not be too small, but larger values do not affect correctness and the wrong guesses they cause only decrease the speed of convergence moderately. For details of this method, see the pseudo-code in Alg.\,\ref{alg:slice}. If the user-specified number of unsuccessful attempts of shrinking is exceeded, the slice sampling ends with an error, which possibly results in a lower number of individuals during that MGSO generation.
+The subspace $S$ is approximated with an axis-aligned hyper-rectangle $H$ of size $\mathbf{w} \in \mathbb{R}^D$, randomly positioned around the current point $\xx$ and successively shrinked if a point inside $H$ but outside $S$ is sampled. The parameter $\mathbf{w}$ is the only parameter of this method, which should not be much smaller than a typical size of the subset $S$. Larger values of $\mathbf{w}$ do not affect correctness and increase only moderatley the number of shrinking steps 13---19 in the pseudo-code Alg.\,\ref{alg:slice}. If the user-specified number of unsuccessful attempts of shrinking is exceeded, the slice sampling ends with an error, which possibly results in a lower number of individuals in the population during that MGSO generation.
 
 Slice sampling has several advantages. First, it nicely scales with higher dimensionalities of the problem. Second, there is no need of conditional distributions as it is with Gibbs' sampler. Moreover, it does not require the density being normalized, which is the case of PoI. This kind of sampler is used in the second version of MGSO, described in this paper.
 
@@ -199,18 +201,21 @@ Slice sampling has several advantages. First, it nicely scales with higher dimen
 \section{Model Guided Sampling Optimization}
 \label{sec:mgso}
 
-As it was already mentioned, the MGSO algorithm for black-box optimization has many common aspects with Jones'~\cite{jones_efficient_1998} Efficient Global Optimization algorithm. Like some of the versions of EGO, it uses the probability of improvement $\mathrm{PoI}_T^{\mathsf{M}_i}(\xx)$ as a measure how promising the specified point $\xx$ is for locating the optimum given a chosen threshold $T$ and the current knowledge of the function landscape
+As it was already mentioned, the MGSO algorithm for black-box optimization has many common aspects with Jones'~\cite{jones_efficient_1998} Efficient Global Optimization algorithm. Like some of the versions of EGO, it uses the probability of improvement $\mathrm{PoI}_T^{\mathsf{M}_i}(\xx)$ as a measure of how promising the specified point $\xx$ is for locating the optimum. This measure is given by a chosen threshold $T$ and the current knowledge of the function landscape
 % saved in the current dataset $\mathsf{S}_i$ and
-modelled by the actual GP model $\mathsf{M}_i$. The main difference is that it does not maximizes this criterion, but it samples the PoI (which is proportional to a density) producing the whole population of individuals. 
+modelled by the current GP model $\mathsf{M}_i$. The main difference to EGO is that MGSO does not maximize this criterion, but it samples the PoI (which is proportional to a density) producing a whole population of individuals. 
 
-After the initial (usually uniform random) sample of the input space, its evaluation and saving to the dataset $\mathsf{S}_0$, the MGSO algorithm proceeds as follows (see Alg.\,\ref{alg:mgso} for details; $\circ$ is a component-wise product of two vectors). First, a new GP model $\mathsf{M}_i$ is fitted to the actual dataset $\mathsf{S}_i$. The model predictive distribution guides the further optimization: the model's PoI is sampled forming the new population. The second version of MGSO added step 6: the last individual in the population is obtained by continuous local smooth optimization of the GP model which speeds-up the optimization process especially in the final part of the algorithm's run. The algorithm continues with evaluating the new population, a new model is fitted to this augmented dataset and the process is repeated until a stopping condition is met.
+After the initial (usually uniform random) sample of the input space, its evaluation and saving to the dataset $\mathsf{S}_0$, the MGSO algorithm proceeds as follows (see Alg.\,\ref{alg:mgso} for details; $\circ$ is a component-wise product of two vectors). First, a new GP model $\mathsf{M}_i$ is fitted to the current dataset $\mathsf{S}_i$. The model predictive distribution guides the further optimization: the model's PoI is sampled forming the new population.
+The algorithm continues with evaluating the population, a new model is fitted to this augmented dataset and the process is repeated until a stopping condition (like the number of objective function evaluations) is met.
+
+The second version of MGSO differs in two points. First, it uses the slice sampling instead of Gibb's sampler and second, a smooth model optimization (step 6 in Alg.\,\ref{alg:mgso}) is added: the last individual in the population is obtained by continuous local optimization of the GP model. This search, which uses the GP as a surrogate model, speeds-up the optimization process especially in the final part of the algorithm's run. 
 
 \begin{algorithm}[t]
 \begin{algorithmic}[1]
 {\small
   \STATE \textbf{Input}: $f$ -- objective function \\
       \quad $N', N$ -- sizes of the initial and standard population \\
-      \quad $r$ -- no. of solutions for dataset restriction
+      \quad $r$ -- the number of solutions for dataset restriction
   \STATE $\mathsf{S}_0 = \{(\xx_j, y_j)\}_{j=1}^{N'} \leftarrow$ generate $N'$ initial samples 
       and evaluate them % to get observed values $\{y_j\}_{j=1}^{N'}$ forming a dataset $\mathsf{S}_0 = \{(\xx_0, y_0)\}$
   \WHILE {no stopping condition is met, $i=1,2,\ldots$}
@@ -233,25 +238,36 @@ After the initial (usually uniform random) sample of the input space, its evalua
 \label{alg:mgso}
 \end{algorithm}
 
+
+\subsection{Input Space Restriction}
+
 To abstract from the search space scaling, MGSO works in an internal, linearly transformed coordinate system defined by mapping
 \begin{equation}
 \mathit{scale}:[\mathbf{l}, \mathbf{u}] \rightarrow [-1, 1]^D
 \end{equation}
-and the transformation can be updated during the optimization. Updating it restricts the learning and sampling space to the neighborhood of the so-far optimum, which enables sampling in the situation when the PoI is non-zero only in a very small region. The lower and upper bounds $[\mathbf{l}_i, \mathbf{u}_i], \hspace{0.7em} \mathbf{l}_i,\mathbf{u}_i \in \mathbb{R}^D$ in each coordinate dimension are determined as a bounding box of $r$ nearest samples from the current optimum, expanded by 10\%; the default is $r=15\cdot D$. These bounds can be updated each iteration~$i$, but they are updated only several times during one optimization run in practice. The value $r$, the initial number of samples $N'$ and the population size $N$ are input parameters of MGSO.
+and the transformation can be updated during the optimization. Updating restricts the learning and sampling space to the neighborhood of the so-far optimum, which enables sampling in the situation when the PoI is non-zero only in a very small region. The lower and upper bounds $[\mathbf{l}_i, \mathbf{u}_i], \hspace{0.7em} \mathbf{l}_i,\mathbf{u}_i \in \mathbb{R}^D$ are determined as a bounding box of $r$ nearest samples from the current optimum. 
+The bounding box is expanded by 10\% in order not to have training points for the GP model on the boundaries of the training region.
+The bounds $[\mathbf{l}_i, \mathbf{u}_i]$ can be updated each iteration~$i$, but they are updated only several times during one optimization run in practice.
 
-The slice sampling method enables us to sample multivariate distributions more easily. Slice sampling from Matlab Statistical toolbox was used which implements shrinking-in of all dimensions. The sampler is extended by a validity-checking of the GP model -- the samples which addition results in ill-con\-di\-tion\-ed covariance matrix are rejected. Further, different thresholds $T$ for $\mathrm{PoI}_T^{\mathsf{M}_i}$ are tested if many such rejections arise.
+The value $r$, the initial number of samples $N'$ and the population size $N$ are input parameters of MGSO. As this paper is still work-in-progress, no rigorous testing for the default values of these parameters has been performed yet. For the results presented in the next section, these values have been used: $r = 15 \cdot D$, $N = N' = 10 \cdot D$.
+
+% the default is $r=15\cdot D$
+
+The slice sampling method enables us to sample multivariate distributions much faster. Slice sampling from Matlab Statistical toolbox was used which implements shrinking-in of all dimensions. The sampler is extended by a validity-checking of the GP model -- the samples which, if added, result in ill-con\-di\-tion\-ed covariance matrix are rejected. These rejections start to occur in later phases of the algorithm run, which is a starting impulse for input space restriction and rescaling. Further, different thresholds $T$ for $\mathrm{PoI}_T^{\mathsf{M}_i}$ are tested if many such rejections arise.
 
 \section{Experimental Results and Conclusion}
 \label{sec:results}
 
+Preliminary testing results from our Matlab implementation\footnote{the source code is freely available at \url{http://github.com/charypar/gpeda}} are comprised in this section. Because of large sampling time and low success rate of the Gibbs' sampler of the first MGSO in higher dimensions, speed of the optimization of the first and second version of MGSO is compared only in 2D testing cases. The second version of MGSO is further compared with the Covariance Matrix Adaptation Evolution Strategy (CMA-ES)~\cite{hansen_completely_2001} -- the state-of-the art in the field of continuous black-box optimization methods -- in 5D and 10D. The comparison of MGSO with Jones' EGO is forthcoming, but not included in this paper. More detailed evaluation of Gibbs' and slice sampling is placed in the first part of this section.
+
 \subsection{Sampling}
 
-The slice sampling has shown to be a noticeable improvement both in terms of the computational resources and the ability of sample enough samples. The results for two and five dimensions are shown in Tab.\,\ref{tab:sampling}, sampling times and the numbers of really generated samples are depicted in Fig.\,\ref{fig:sampling}.
+The slice sampling has shown to be a noticeable improvement both in terms of the CPU time (for sampling and for the GP model evaluations) and the ability of sample enough samples from PoI. Illustrative results of the sampling CPU time and the number of GP model evaluations for two particular GP models in 2D and 5D are shown in Tab.\,\ref{tab:sampling} and sampling times and the numbers of successfully generated samples are depicted in Fig.\,\ref{fig:sampling}.
 
 \begin{table}% [!bh]
 \begin{center}
 {\small
-\caption{Comparison of Gibbs' and Slice sampling in 2D and 5D, results from 15 runs of sampling. Generated 20 samples in 2D and 50 samples in 5D.}
+\caption{Comparison of Gibbs' and Slice sampling, results from 15 runs of sampling. Average CPU time and the number of evaluations of the GP model's PoI needed to generate 20/50 samples in 2D/5D. The differences of the CPU time per GP evaluation is mainly because of the batch evaluation of PoI for empir.\,CDF in Gibbs' sampler.}
 \vspace{1ex}
 \label{tab:sampling}
 \begin{tabular}{l | c c c c}
@@ -259,7 +275,7 @@ The slice sampling has shown to be a noticeable improvement both in terms of the
             & Gibbs 2D  & slice 2D      & Gibbs 5D      & slice 5D \\
 \hline
 time [s]    & 1.85      & 1.11          & 42.41         & 17.56 \\
-\# of eval. & 2 402     & 246           & 20 087        & 2 909 \\
+\# GP eval. & 2 402     & 246           & 20 087        & 2 909 \\
 \hline
 \end{tabular}
 } % \small
@@ -269,9 +285,9 @@ time [s]    & 1.85      & 1.11          & 42.41         & 17.56 \\
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.9\linewidth]{sampling_time_popsize_5D}
+  \includegraphics[width=0.7\linewidth]{sampling_time_popsize_5D}
   {\small
-  \caption{Computational time and the number of really generated samples in 5D. Results from 15 independent runs with the same GP model/PoI.
+  \caption{Computational time and the number of successfully generated samples in 5D. Results from 15 independent runs with the same GP model/PoI.
   \label{fig:sampling}
   }
   }
@@ -279,11 +295,9 @@ time [s]    & 1.85      & 1.11          & 42.41         & 17.56 \\
 
 \subsection{BBOB Benchmark Functions Optimization}
 
-The proposed MGSO has been tested on three different continuous benchmark functions from the BBOB testing set~\cite{hansen_real_2009}: sphere, Rosenbrock and Rastrigin functions. Although the previous version of the algorithm~\cite{bajer_model_2013} was practically able to optimize only two-dimensional versions of these functions, this paper provides results from 5D and 10D as well. The rapid speed-up was caused mainly by the slice sampling method and partly also by the continuous local optimization step performed every iteration.
+The proposed MGSO has been tested on three different continuous benchmark functions from the BBOB testing set~\cite{hansen_real_2009}: sphere, Rosenbrock and Rastrigin functions. Although the previous version of the algorithm~\cite{bajer_model_2013} was practically able to optimize only two-dimensional versions of these functions, this paper provides results from 5D and 10D as well. The computational speed-up was caused mainly by the slice sampling method and partly also by the continuous model optimization step. % performed every iteration.
 
-The performance of the algorithm was compared with the Covariance Matrix Adaptation Evolution Strategy (CMA-ES)~\cite{hansen_completely_2001} -- the state-of-the art in the field of continuous black-box optimization methods. In two dimensions, the current version of the MGSO outperformed CMA-ES (considering budget 500 original evaluations) on both sphere and Rosenbrock functions, and it performs approximately equally well on Rastrigin function, see Fig.\,\ref{fig:optim_2D}.
-
-The MGSO scales nicely on the easy sphere function. Both in 5D and 10D, dramatically lower number of function evaluations is needed to reach threshold of the objective function values $f_{\Delta} = 10^{-4}$ than in the case of CMA-ES, see Fig.\,\ref{fig:optim_5D} and Fig.\,\ref{fig:optim_10D}. On the Rosenbrock function, the number of evaluations of MGSO needed to reach $f_{\Delta} = 10^{-2}$ is lower in 5D, but CMA-ES works better in 10D. The hardest Rastrigin function with extensive number of local minima is not harder than the two other functions for CMA-ES, but it is not the case of MGSO. Our algorithm is outperformed by CMA-ES in both Rosenbrock and Rastrigin functions.
+In two dimensions, the current version of the MGSO outperformed CMA-ES (considering budget 500 original evaluations) on both sphere and Rosenbrock functions, and it performs approximately equally well on Rastrigin function, see Fig.\,\ref{fig:optim_2D}. In terms of the CPU time for the whole optimization, the CMA-ES runs in several seconds while MGSO takes several or tens of minutes to process. But as we are concerned with expensive (usually empirical-function) optimization, we suppose the cost for the MGSO search being dominated by the time and money for the original evaluations.
 
 
 \begin{figure}
@@ -296,7 +310,6 @@ The MGSO scales nicely on the easy sphere function. Both in 5D and 10D, dramatic
   }
 \end{figure}
 
-
 \begin{figure}
   \centering
   \includegraphics[width=\linewidth]{optim_5D}
@@ -306,7 +319,6 @@ The MGSO scales nicely on the easy sphere function. Both in 5D and 10D, dramatic
   }
   }
 \end{figure}
-
 
 \begin{figure}
   \centering
@@ -319,10 +331,16 @@ The MGSO scales nicely on the easy sphere function. Both in 5D and 10D, dramatic
   }
 \end{figure}
 
+The MGSO scales nicely on the unimodal and symmetric sphere function. Both in 5D and 10D, a dramatically lower number of function evaluations is needed to reach threshold of the objective function values $f_{\Delta} = 10^{-4}$ than in the case of CMA-ES, see Fig.\,\ref{fig:optim_5D} and Fig.\,\ref{fig:optim_10D}. On the Rosenbrock function, however, the number of evaluations of MGSO needed to reach $f_{\Delta} = 10^{-2}$ is lower in 5D, but CMA-ES works better in 10D. The multimodal Rastrigin function with large number of local minima is not harder than the two other functions for CMA-ES, but it is not the case of MGSO. Our algorithm is outperformed by CMA-ES in both 5D and 10D for that benchmark function.
 
-\subsection{Conclusion}
 
-The Model Guided Sampling Optimization was introduced in more detail. Several improvements of this algorithm was given and much more experimental results than in the last brief work~\cite{bajer_model_2013} were provided. The experiments show that the proposed method can successfully compete with the state-of-the art continuous black-box optimization algorithm CMA-ES in lower dimensions and on easier functions.
+\subsection{Conclusions and future work}
+
+Our method shows promising results in terms of the number of true objective function evaluations in the initial phase of optimization. However, there are still many issues to solve. In general, we are planning to work on improving the final local optimization in the region of the optimum either by improving MGSO itself or combining it with some other method in the final phase. Further, fitting of hyper-parameters of the GP model will be studied, since GPML implementation\footnote{\url{http://www.gaussianprocess.org/gpml/code/matlab/}}~\cite{rasmussen_gaussian_2010} being used is often not able to fit them to optimal values.
+
+Future work should also test different initial sampling schemes which affect the model quality and thus performance of the method and perform rigorous testing of the effects of input parameters, which were set by hand for our initial experiments. A comparison with the EGO method which was not done due to a lack of a readily available implementation will also be performed. 
+
+The Model Guided Sampling Optimization was introduced in more detail. Several improvements of this algorithm were given and more experimental results than in the last brief work~\cite{bajer_model_2013} were provided. The experiments show that the proposed method can successfully compete with the state-of-the art continuous black-box optimization algorithm CMA-ES in lower dimensions and on unimodal symmetric functions.
 
 
 % \noindent ==================
@@ -340,7 +358,11 @@ The Model Guided Sampling Optimization was introduced in more detail. Several im
 
 \subsection*{Acknowledgments}
 
-This work was supported by the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S}, and the Grant Agency of the Charles University (GAUK) \hbox{278511/2011} grant. 
+This work was supported by 
+the Czech Science Foundation (GA\v{C}R) grants \hbox{P202/11/1368} and \hbox{13-17187S}, 
+the Grant Agency of the Charles University (GAUK) \hbox{278511/2011} grant and 
+the Grant Agency of the Czech Technical University in Prague, grant No.~\hbox{SGS12/196/OHK3/3T/14}.
+
 
 %
 % ---- Bibliography ----
