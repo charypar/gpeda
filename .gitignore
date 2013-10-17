@@ -3,3 +3,13 @@
 
 exp/bbob/output
 paper/ppdata
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.aut
+*.nav
+*.out
+*.snm
+*.toc
