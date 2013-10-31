@@ -19,13 +19,17 @@ n = size(x,1);
 
 % evaluate the PoI
 [m s2] = modelPredict(M, x);
-q = (target - m) ./ sqrt(s2);
+% be carefull when dividing by 0 (edit 17/10/2013)
+null_variance = (abs(s2) < eps);
+q = zeros(n,1);
+target_full = repmat(target,n,1);
+q(~null_variance) = (target_full(~null_variance) - m(~null_variance)) ./ sqrt(s2(~null_variance));
 
 % save the PoI for x's inside region (lb,ub)
 out_of_range = any(x < repmat(lb,n,1) | x > repmat(ub,n,1), 2);
 poi = zeros(n,1);
 if (sum(out_of_range)<n)
-  poi(~out_of_range) = normcdf(q);
+  poi(~out_of_range & ~null_variance) = normcdf(q);
 end
 
 % % sinus-shape modification (lower for lower values, higher for higer)
