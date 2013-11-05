@@ -28,7 +28,7 @@ maxrestarts = 1e4;        % SET to zero for an entirely deterministic algorithm
 
 dimensions  = [2];    % which dimensions to optimize, subset of [2 3 5 10 20 40];
 
-functions   = [8];    % function ID's to optimize
+functions   = [3];    % function ID's to optimize
 % functions   = benchmarks('FunctionIndices');
 
 instances = [1:5, 31:40];      % [1:5, 31:40]

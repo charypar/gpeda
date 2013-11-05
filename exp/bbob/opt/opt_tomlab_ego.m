@@ -40,6 +40,14 @@ for ilaunch = 1:1e4; % up to 1e4 times
   % standard fminsearch()
   % [x fmin counteval stopflag out bestever y_eval] = cmaes(FUN, xstart, 8/3, options);
   Result = ego(tomlabProb);
+  
+  FF = Result.CGO.WarmStartInfo.F00;
+  x = Result.x_k;
+  y_eval = zeros(length(FF), 2);
+  y_eval = [FF(1) 1];
+  for i = 2:length(FF)
+    y_eval(i,:) = [min(FF((i-1):i)) i];
+  end;
 
   n_y_evals = size(y_eval,1);
   y_eval = y_eval - ([ftarget * ones(n_y_evals,1) zeros(n_y_evals,1)]);
