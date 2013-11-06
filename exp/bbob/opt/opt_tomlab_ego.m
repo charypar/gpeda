@@ -9,12 +9,6 @@ function [x, ilaunch, y_evals] = opt_tomlab_ego(FUN, DIM, ftarget, maxfunevals)
 
 xstart = 8 * rand(DIM, 1) - 4; % random start solution
 
-options = struct( ...
-  'MaxFunEvals', min(1e8*DIM, maxfunevals), ...
-  'StopFitness', fgeneric('ftarget'), ...
-  'LBounds', -5, ...
-  'UBounds',  5);
-
 x_L = -5 * ones(1,DIM);
 x_U = 5 * ones(1,DIM);
 x_min = x_L;
@@ -23,9 +17,13 @@ tomlabProb = glcAssign(FUN, x_L, x_U, 'BBOB_EGO_test', [], [], [],...
     [], [], [], [], ...
     [], [], [], [], ...
     [], x_min, x_max, [], []);
-tomlabProb.optParam.MaxFunc = min(1e8*DIM, maxfunevals);
+% Max. number of FUN evaluations
+tomlabProb.optParam.MaxFunc = min(1e6*DIM, maxfunevals);
+% Max. number of response-surface local optimization iterations
+tomlabProb.optParam.MaxIter = 100; % (default: 1000)
 % No warm start
 tomlabProb.WarmStart = 0;
+tomlabProb.MaxCPU = 600;
 % Circle surrounding by 20%, ExD = 14
 % TODO: to be tuned!!! see `help ego` and Prob.CGO.Percent parameter
 tomlabProb.CGO.Percent = 120;
