@@ -1,6 +1,13 @@
 function res = isCovarianceSPD(M, x_, varargin)
 % isCovarianceSPD checks if covariance matrix is positive definite
+
   lenx = size(x_,1);
+  
+  %{
+  % Version GP Lawrence
+  [L p] = chol(M.m.K_uu);
+  %}
+
   K = feval(M.covfunc, M.hyp.cov, x_);
   sn2 = exp(2*M.hyp.lik);
   % [L p] = chol(eye(lenx)+K);
