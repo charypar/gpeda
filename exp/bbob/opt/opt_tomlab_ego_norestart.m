@@ -20,10 +20,10 @@ tomlabProb = glcAssign(FUN, x_L, x_U, 'BBOB_EGO_test', [], [], [],...
 % Max. number of FUN evaluations
 tomlabProb.optParam.MaxFunc = min(1e6*DIM, maxfunevals);
 % Max. number of response-surface local optimization iterations
-tomlabProb.optParam.MaxIter = 50; % (default: 1000)
+tomlabProb.optParam.MaxIter = 100; % (default: 1000)
 % No warm start
 tomlabProb.WarmStart = 0;
-tomlabProb.MaxCPU = 600;
+tomlabProb.MaxCPU = 1800;
 % Circle surrounding by 20%, ExD = 14
 % TODO: to be tuned!!! see `help ego` and Prob.CGO.Percent parameter
 tomlabProb.CGO.Percent = 120;

@@ -29,7 +29,7 @@ q(~null_variance) = (target_full(~null_variance) - m(~null_variance)) ./ sqrt(s2
 out_of_range = any(x < repmat(lb,n,1) | x > repmat(ub,n,1), 2);
 poi = zeros(n,1);
 if (sum(out_of_range)<n)
-  poi(~out_of_range & ~null_variance) = normcdf(q);
+  poi(~out_of_range & ~null_variance) = normcdf(q(~out_of_range & ~null_variance));
 end
 
 % % sinus-shape modification (lower for lower values, higher for higer)

@@ -43,6 +43,8 @@ att = run.attempt;
 it = run.attempts{att}.iterations;
 ev = sum(cell2mat(cellMap(run.attempts, @(att) ( att.evaluations ))));
 
+disp(['Evaluations so far: ' num2str(ev)]);
+
 t = sprintf('Attempt %d, generation %d (used %d evaluations)', att, it, ev);
 title(t);
 
