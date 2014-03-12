@@ -67,7 +67,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
   % train model
   disp('Training model...'  );
-  [M_try nTrainErrors] = modelTrain(M, ds.x, ds.y);
+  [M_try nTrainErrors] = modelTrain(M, ds.x, ds.y, options);
   run.notSPDCovarianceErrors = [run.notSPDCovarianceErrors nTrainErrors];
 
   if (nTrainErrors > maxTrainErrors) 
@@ -88,7 +88,9 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     run.attempts{att}.model = M;
     disp(['Sampling population ' int2str(it) '...']);
     try
-      [pop tolXDistRatio] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
+      maxLogPdf = 0;    % to be set in case sampling crashes
+      [pop tolXDistRatio maxLogPdf] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
+      disp(['  DEBUG: maxPdf = ' num2str(exp(maxLogPdf))]);
       % find continuous minimum of the GP and add it or replace the nearest 
       % individual if covariance matrix is still SPD
       [best_x_model] = findModelMinimum(M, run.attempts{att}, dim);
@@ -121,10 +123,11 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     run.attempts{att}.populations{it} = pop;
     run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
     run.attempts{att}.model = M;
+    run.attempts{att}.maxLogPdf = maxLogPdf;
 
     % call the "observer", if there were any
     if nargin > 7 && isa(varargin{1}, 'function_handle')
-      feval(varargin{1}, run)
+      feval(varargin{1}, run);
     end
 
     % evaluate and add to dataset
@@ -198,6 +201,9 @@ if nargout > 0
   varargout{1} = run;
 end
 
+
+end  % main function
+
 % Support functions
 
 function attempt = initAttempt(re_lb, re_ub, eval_fcn, doe_fcn, options)
@@ -242,7 +248,8 @@ function attempt = initRescaleAttempt(lastAttempt, re_lb, re_ub, options)
   if(isfield(options, 'model'))
     attempt.model = options.model;
   else
-    attempt.model = modelInit(D);
+    hyp.mean = min(lastAttempt.dataset.y);
+    attempt.model = modelInit(D, hyp);
   end
 
   lastScale = lastAttempt.scale;
@@ -289,10 +296,12 @@ function tf = evalconds(conds, run, opts)
   end
 end
 
-function [pop tol] = sample(samplers, M, D, n, thisAttempt, opts)
+function [pop tol maxLogPdf] = sample(samplers, M, D, n, thisAttempt, opts)
   if isa(samplers, 'function_handle')
-    [pop tol] = feval(samplers, M, D, n, thisAttempt, opts);
+    [pop tol maxLogPdf] = feval(samplers, M, D, n, thisAttempt, opts);
   else
+    % TODO: maxLogPdf!
+    maxLogPdf = 0;
     for k = 1:length(samplers)
       [p t] = feval(samplers{k}, M, D, n, thisAttempt, opts{k});
       samplers{k} = [p t];
@@ -430,7 +439,4 @@ function thisAttempt = updateAttempt(thisAttempt, pop_, y, m, s2)
     thisAttempt.bests.x(end + 1, :) = thisAttempt.bests.x(end, :);
     thisAttempt.bests.yms2(end + 1, :) = thisAttempt.bests.yms2(end, :);
   end
-end
-
-
 end

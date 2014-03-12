@@ -13,6 +13,9 @@ popSize = 10 * DIM;
 opts.lowerBound = ones(1, DIM) * -5;
 opts.upperBound = ones(1, DIM) * 5;
 
+% GP model training algorithm
+opts.trainAlgorithm = 'fmincon';
+
 % DOE
 opts.doe.n = popSize            % TODO test how to set this
 opts.doe.minTolX = 0.002;
@@ -24,10 +27,11 @@ opts.sampler.minTolX = 0.002;
 opts.eval.handle = @(x)( feval(FUN, x')' );
 
 % Rescale Conditions
-rescaleConds = {@stopTolX, @stopTolXDistRatio};
+rescaleConds = {@stopTolX, @stopTolXDistRatio, @stopLowLogpdf};
 opts.rescale = {
   struct('tolerance', 0.1),
-  struct('tolerance', 0.5)
+  struct('tolerance', 0.5),
+  struct('tolerance', log(0.05))
 };
 
 % Restart Conditions
