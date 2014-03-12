@@ -1,5 +1,6 @@
-function [s tolXDistRatio neval] = sampleSlice(M, dim, nsamples, attempt, spar)
+function [s tolXDistRatio maxLogPdf] = sampleSlice(M, dim, nsamples, attempt, spar)
 % Slice sampler -- very testing version!
+% historic output: neval (not anymore)
 
 if (~isfield(spar, 'minTolX'))
   spar.minTolX = 0.002; % the minimum distance in X's to any point 
@@ -38,12 +39,16 @@ while (errCode ~= 0 && i <= length(thresholds))
 
   % start at the current best point -- there sould be at least some PoI > 0
   startX = bestX;
-  [s_, neval_, errCode, nTolXErrors_] = myslicesample(startX, nsamples, 'logpdf', logdensity, 'burnin', 100, 'thin', 10, 'width', 1*ones(1,dim), 'dataset', attempt.dataset.x, 'minTolX', 0.002, 'model', M);
+  [s_, neval_, errCode, nTolXErrors_, maxLogPdf] = myslicesample(startX, nsamples, 'logpdf', logdensity, 'burnin', 100, 'thin', 10, 'width', 1*ones(1,dim), 'dataset', attempt.dataset.x, 'minTolX', 0.002, 'model', M);
   neval = neval + neval_;
 
   if (size(s_,1) > size(s,1))
     s = s_;
     nTolXErrors = nTolXErrors_;
+  end
+  if (maxLogPdf < log(10e-10))
+    % maximum sampled logpdf is tooo looow :(
+    errCode = 3;
   end
 
   switch (errCode)
@@ -51,6 +56,8 @@ while (errCode ~= 0 && i <= length(thresholds))
     disp(['sampleSlice(): There is no probability of improvement with threshold ' num2str(thresholds(i))]);
   case 2
     disp(['sampleSlice(): Could not sample enough individuals far enough between each other with threshold ' num2str(thresholds(i))]);
+  case 3
+    disp(['sampleSlice(): The maximal logpdf is low: min(logpdf) = ' num2str(maxLogPdf)]);
   end
   i = i + 1;
 end

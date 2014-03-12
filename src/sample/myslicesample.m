@@ -1,4 +1,4 @@
-function [rnd, neval, errCode, nTolXErrors] = myslicesample(initial,nsamples,varargin)
+function [rnd, neval, errCode, nTolXErrors, maxLogPdf] = myslicesample(initial,nsamples,varargin)
 %MYSLICESAMPLE Modified slice sampling method from Matlab/Stast toolbox
 %   RND = SLICESAMPLE(INITIAL,NSAMPLES,'pdf',PDF) draws NSAMPLES random
 %   samples from a target distribution with the density function PDF using
@@ -126,12 +126,15 @@ inside = @(x,th) (logpdf(x) > th);
 
 nSampled = 0;
 nTolXErrors = 0;
+maxLogPdf = -Inf;
 while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
   for j = 1:thin
     % A vertical level is drawn uniformly from (0,f(x0)) and used to define
     % the horizontal "slice".
     % z = logpdf(x0) - e(i+burnin);
-    z = logpdf(x0) - exprnd(1);
+    curr_logpdf = logpdf(x0);
+    z = curr_logpdf - exprnd(1);
+    maxLogPdf = max(maxLogPdf, curr_logpdf);
 
     % An interval [xl, xr] of width w is randomly position around x0 and then
     % expanded in steps of size w until both size are outside the slice.   

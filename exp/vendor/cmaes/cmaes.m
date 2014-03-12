@@ -307,8 +307,8 @@ if isempty(fitfun)
   % warning(['Objective function not determined, ''' fitfun ''' used']);
   error(['Objective function not determined']);
 end
-if ~ischar(fitfun)
-  error('first argument FUN must be a string');
+if (~ischar(fitfun) && ~isa(fitfun, 'function_handle'))
+  warning('first argument FUN should be a string or function handle');
 end
 
 
@@ -855,12 +855,17 @@ while isempty(stopflag)
     else
       strrun = '';
     end
+    if (~isstr(fitfun))
+      f_name = func2str(fitfun);
+    else
+      f_name = fitfun;
+    end
     disp(['  n=' num2str(N) ': (' num2str(mu) ',' ...
           num2str(lambda) ')-CMA-ES(w=[' ...
           strw ']%, ' ...
           'mu_eff=' num2str(mueff,'%.1f') ...
           ') on function ' ...
-          (fitfun) strrun]);
+          (f_name) strrun]);
     if flgDiagonalOnly == 1
       disp('    C is diagonal');
     elseif flgDiagonalOnly

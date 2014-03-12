@@ -16,4 +16,4 @@ b = [zeros(1, dim); xbest(end-4:5, :)];
 d = sqrt(sum((a - b).^2, 2));
 d = d(2:end-1);
 
-tf = sum(d) < opts.tolerance
+tf = sum(d) < opts.tolerance;

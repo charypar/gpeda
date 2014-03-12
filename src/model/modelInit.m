@@ -20,24 +20,23 @@ function M = modelInit(dim, varargin)
 % cov  - for covSEiso: ell (char. length) = 1, sf (signal variance) = 1
 % lik  - for likGauss: sn (noise std. deviation) = 0.0001 (almost no expected noise)
 
-if nargin > 1
+if nargin > 1 && exist('hyp', 'var')
   hyp = varargin{1};
 else
   hyp.cov = log([0.05, 0.1]);
   hyp.lik = log(0.0001);
 end
 
-if nargin < 3
-  mean = {@meanConst};
-  cov = {@covSEiso};
+mean = {@meanConst};
+cov = {@covSEiso};
 
-  if ~isfield(hyp, 'cov')
-    hyp.cov = log([1, 1]);
-  end
-  if ~isfield(hyp, 'mean')
-    hyp.mean = [0];
-  end
-else
+if ~isfield(hyp, 'cov')
+  hyp.cov = log([1, 1]);
+end
+if ~isfield(hyp, 'mean')
+  hyp.mean = [0];
+end
+if nargin > 3
   mean = varargin{2};
   cov = varargin{3};
 end
@@ -68,3 +67,5 @@ M = struct( ...
   'covfunc', cov, ...
   'likfunc', lik ...
 );
+
+end

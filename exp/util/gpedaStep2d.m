@@ -26,7 +26,8 @@ gridSize = 101;
 
 dim = size(lb,2);
 if (dim > 2)
-  xy_column = [xy_column zeros(size(xy_column,1),dim-2)];
+  bst = run.attempts{att}.bests.x(end,:);
+  xy_column = [xy_column repmat(bst(3:end),size(xy_column,1),1)];
 end
 
 xy_original = transform(xy_column, scale, shift);
