@@ -23,7 +23,7 @@ function M = modelInit(dim, varargin)
 if nargin > 1 && exist('hyp', 'var')
   hyp = varargin{1};
 else
-  hyp.cov = log([0.05, 0.1]);
+  hyp.cov = log([0.05 * ones(1,dim), 0.1]);
   hyp.lik = log(0.0001);
 end
 
@@ -31,7 +31,7 @@ mean = {@meanConst};
 cov = {@covSEiso};
 
 if ~isfield(hyp, 'cov')
-  hyp.cov = log([1, 1]);
+  hyp.cov = log([ones(1,dim), 1]);
 end
 if ~isfield(hyp, 'mean')
   hyp.mean = [0];

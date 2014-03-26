@@ -68,7 +68,7 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       cmaesopt.LBounds = lb';
       cmaesopt.UBounds = ub';
       status = warning('off');
-      [opt2, fval2] = cmaes(f, linear_hyp', [0.3*(ub(1:4) - lb(1:4)) 100]', cmaesopt);
+      [opt2, fval2] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
       warning(status);
       % % try Rasmussen's minimize() as well
       % [opt_, fval3] = minimize(model.hyp, @gp, -100, @infExactCountErrors, model.meanfunc, model.covfunc, model.likfunc, x, y);
