@@ -72,15 +72,15 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       % training itself
       try
         [opt1, fval1] = fmincon(f, linear_hyp', [], [], [], [], lb, ub, nonlnc, options);
+        if (isnan(fval1))
+          alg = 'cmaes';
+        end
+        fval = fval1;
+        opt = opt1;
       catch err
         warning('ERROR: fmincon() ended with an exception.');
         alg = 'cmaes';
       end
-      if (isnan(fval1))
-        alg = 'cmaes';
-      end
-      fval = fval1;
-      opt = opt1;
       %{
       % try CMA-ES if performes better
       cmaesopt.MaxFunEvals = 2000;
@@ -109,11 +109,12 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
     if (length(hyp.cov) > 2)
       % there is ARD covariance
       % try run cmaes for 500 funevals to get bounds for covariances
+      MAX_DIFF = 2.5;
       cmaesopt.MaxFunEvals = 500;
       [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
       cov_median = median(opt(1:(end-4)));
-      ub(1:(end-4)) = cov_median + 2.5;
-      lb(1:(end-4)) = cov_median - 2.5;
+      ub(1:(end-4)) = cov_median + MAX_DIFF;
+      lb(1:(end-4)) = cov_median - MAX_DIFF;
       cmaesopt.LBounds = lb';
       cmaesopt.UBounds = ub';
     end
