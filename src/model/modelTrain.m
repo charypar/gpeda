@@ -34,7 +34,7 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
   l_cov = length(hyp.cov);
   
   % lower and upper bounds
-  lb_hyp.cov = -10 * ones(size(hyp.cov));
+  lb_hyp.cov = -2 * ones(size(hyp.cov));
   lb_hyp.inf = log(1e-7);
   lb_hyp.lik = log(1e-7);
   lb_hyp.mean = -Inf;
@@ -53,8 +53,16 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
             'TolX', 1e-8, ...
             'MaxIter', 1000, ...
             'MaxFunEvals', 1000, ...
-            'Algorithm','trust-region-reflective' , ...
             'Display', 'final');
+    if (length(hyp.cov) > 2)
+      % ARD
+      options = optimset(options, 'Algorithm','interior-point');
+      nonlnc = @nonlincons;
+    else
+      % ISOtropic
+      options = optimset(options, 'Algorithm','trust-region-reflective');
+      nonlnc = [];
+    end
     initial = f(linear_hyp');
     % DEBUG OUTPUT:
     disp(['Model training, init fval = ' num2str(initial)]);
@@ -62,7 +70,13 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       alg = 'cmaes';
     else
       % training itself
-      [opt1, fval1] = fmincon(f, linear_hyp', [], [], [], [], lb, ub, [], options);
+      [opt1, fval1] = fmincon(f, linear_hyp', [], [], [], [], lb, ub, nonlnc, options);
+      if (isnan(fval1))
+        alg = 'cmaes';
+      end
+      fval = fval1;
+      opt = opt1;
+      %{
       % try CMA-ES if performes better
       cmaesopt.MaxFunEvals = 2000;
       cmaesopt.LBounds = lb';
@@ -81,13 +95,24 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       fval = fm;
       opts = [opt1 opt2]; % opt3];
       opt = opts(:, fi);
+      %}
     end
   end
   if (strcmp(alg, 'cmaes'))
-    cmaesopt.MaxFunEvals = 2000;
-    cmaesopt.MaxFunEvals = 2000;
     cmaesopt.LBounds = lb';
     cmaesopt.UBounds = ub';
+    if (length(hyp.cov) > 2)
+      % there is ARD covariance
+      % try run cmaes for 500 funevals to get bounds for covariances
+      cmaesopt.MaxFunEvals = 500;
+      [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
+      cov_median = median(opt(1:(end-4)));
+      ub(1:(end-4)) = cov_median + 2.5;
+      lb(1:(end-4)) = cov_median - 2.5;
+      cmaesopt.LBounds = lb';
+      cmaesopt.UBounds = ub';
+    end
+    cmaesopt.MaxFunEvals = 2000;
     [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
   end
 
@@ -126,4 +151,15 @@ function [nlZ dnlZ] = linear_gp(linear_hyp, s_hyp, inf, mean, cov, lik, x, y)
   hyp = rewrap(s_hyp, linear_hyp');
   [nlZ s_dnlZ] = gp(hyp, inf, mean, cov, lik, x, y);
   dnlZ = unwrap(s_dnlZ)';
+end
+
+function [c ceq] = nonlincons(x)
+  % checks if the values x(1:(end-4)) are within 2.5 off median
+  MAX_DIFF = 2.5;
+  ceq = [];
+  assert(size(x,2) == 1, 'Argument for nonlincons is not a vector');
+  c = zeros(size(x));
+  % test only for covariance parameters
+  % TODO: are there always 4 more parameters?!
+  c = abs(x(1:end-4) - median(x(1:end-4))) - MAX_DIFF;
 end

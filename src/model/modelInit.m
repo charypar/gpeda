@@ -20,10 +20,10 @@ function M = modelInit(dim, varargin)
 % cov  - for covSEiso: ell (char. length) = 1, sf (signal variance) = 1
 % lik  - for likGauss: sn (noise std. deviation) = 0.0001 (almost no expected noise)
 
-if nargin > 1 && exist('hyp', 'var')
+if nargin > 1
   hyp = varargin{1};
 else
-  hyp.cov = log([0.05 * ones(1,dim), 0.1]);
+  hyp.cov = log([0.05 0.1]);
   hyp.lik = log(0.0001);
 end
 
