@@ -47,9 +47,11 @@ opts.stop = {
 gpedaStep2d_ftarget = @(run) gpedaStep2d(run, fgeneric('ftarget'));
 
 if (strcmpi(cov_function, 'covSEard'))
-  hyp.cov = log([0.05 * ones(1,DIM)  0.1]);
+  % hyp.cov = log([0.05 * ones(1,DIM)  0.1]);
+  hyp.cov = [0.1 * ones(1,DIM)  11];
   hyp.mean = [0];
-  hyp.lik = log(0.001);
+  % hyp.lik = log(0.001);
+  hyp.lik = -4;
   mean = @meanConst;
   cov = @covSEard;
   opts.model = modelInit(DIM, hyp, mean, cov);

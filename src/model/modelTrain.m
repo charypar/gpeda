@@ -88,7 +88,7 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
     cmaesopt.MaxFunEvals = 2000;
     cmaesopt.LBounds = lb';
     cmaesopt.UBounds = ub';
-    [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:4) - lb(1:4)) 100]', cmaesopt);
+    [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
   end
 
   model.hyp = rewrap(hyp, opt);
