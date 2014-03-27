@@ -70,7 +70,12 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       alg = 'cmaes';
     else
       % training itself
-      [opt1, fval1] = fmincon(f, linear_hyp', [], [], [], [], lb, ub, nonlnc, options);
+      try
+        [opt1, fval1] = fmincon(f, linear_hyp', [], [], [], [], lb, ub, nonlnc, options);
+      catch err
+        warning('ERROR: fmincon() ended with an exception.');
+        alg = 'cmaes';
+      end
       if (isnan(fval1))
         alg = 'cmaes';
       end
