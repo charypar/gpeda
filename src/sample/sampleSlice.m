@@ -14,10 +14,17 @@ currBestY = attempt.bests.yms2(end,1);
 currWorstY = min(attempt.dataset.y);
 tolXDistRatio = 0;
 
-thresholds = [0 0.001 1.0];
+thresholds = [0 0.001 0.01 0.3];
+% % FORMER THRESHOLDS:
+% thresholds = [0 0.001 1.0];
 % thresholds = [0 0.001 0.30 1.0 3.0];
 % thresholds = flipdim(thresholds, 2);
-targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
+
+% TODO: evaluate, that this is right, not stupid as it was!!! (27 Oct 2014)
+targets = currBestY + thresholds .* (currWorstY - currBestY));
+%
+% % THIS IS STUPID!!!
+% targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
 
 % check if covariance matrix is positive definite
 lx = size(attempt.dataset.x,1);

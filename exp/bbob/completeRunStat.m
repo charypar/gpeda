@@ -9,7 +9,7 @@ function [M medians evals] = completeRunStat(y_evals, varargin)
 
   M = zeros(N,length(y_evals));
   for i = 1:length(y_evals)
-    M(:,i) = runStat(y_evals{i}, N);
+    M(:,i) = runStat(y_evals{i}, N) + 1e-8;
   end
   medians = median(M, 2);
 end
