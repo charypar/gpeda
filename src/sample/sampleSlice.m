@@ -53,7 +53,7 @@ while (errCode ~= 0 && i <= length(thresholds))
     s = s_;
     nTolXErrors = nTolXErrors_;
   end
-  if (maxLogPdf < log(10e-10))
+  if ((errCode ~= 4) && maxLogPdf < log(10e-10))
     % maximum sampled logpdf is tooo looow :(
     errCode = 3;
   end
@@ -65,6 +65,8 @@ while (errCode ~= 0 && i <= length(thresholds))
     disp(['sampleSlice(): Could not sample enough individuals far enough between each other with threshold ' num2str(thresholds(i))]);
   case 3
     disp(['sampleSlice(): The maximal logpdf is low: min(logpdf) = ' num2str(maxLogPdf)]);
+  case 4
+    disp(['sampleSlice(): There is zero PoI in the starting point. No points sampled.']);
   end
   i = i + 1;
 end

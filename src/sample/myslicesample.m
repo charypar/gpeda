@@ -97,7 +97,8 @@ else
 end;
 
 if (logpdf(initial)==-Inf)
-    error(message('stats:slicesample:BadInitial'))
+    % error(message('stats:slicesample:BadInitial'))
+    errCode = 4;
 end
 %error checks for burnin and thin
 if (burnin<0) || burnin~=round(burnin)
@@ -112,7 +113,6 @@ maxiter = 500;
 dim = size(initial,2); % dimension of the distribution
 outclass = superiorfloat(initial); %single or double
 rnd = zeros(nsamples,dim,outclass); % place holder for the random sample sequence
-errCode = 0;
 
 neval = nsamples;  % one function evaluation is needed for each slice of the density.
 
@@ -127,6 +127,14 @@ inside = @(x,th) (logpdf(x) > th);
 nSampled = 0;
 nTolXErrors = 0;
 maxLogPdf = -Inf;
+
+if (exist('errCode') && errCode > 0)
+  rnd = [];
+  return;
+else
+  errCode = 0;
+end
+
 while ((nSampled < nsamples) && (nTolXErrors < maxTolXErrors))
   for j = 1:thin
     % A vertical level is drawn uniformly from (0,f(x0)) and used to define
