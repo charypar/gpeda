@@ -21,7 +21,7 @@ thresholds = [0 0.001 0.01 0.3];
 % thresholds = flipdim(thresholds, 2);
 
 % TODO: evaluate, that this is right, not stupid as it was!!! (27 Oct 2014)
-targets = currBestY + thresholds .* (currWorstY - currBestY));
+targets = currBestY + thresholds .* (currWorstY - currBestY);
 %
 % % THIS IS STUPID!!!
 % targets = currBestY * (1 - thresholds .* (currWorstY - currBestY));
