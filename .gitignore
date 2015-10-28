@@ -13,8 +13,11 @@ paper/ppdata
 *.out
 *.snm
 *.toc
-*_[0-9][0-9].m
 *.tgz
 outcmaes*
 exp/experiments/*/
 log/*/
+exp/bbob/bbob_exp_tomlab_*
+exp/bbob/bbob_exp_gpeda_*
+exp/bbob/bbob_exp_bajego_*
+exp/bbob/bbob_exp_cmaes_*
