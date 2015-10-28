@@ -177,7 +177,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
 
       run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
       disp('Got rescale attempt');
-      run.attempts{att}
+      run.attempts{att};
     else
       disp('Rescaling canceled, rescale was already in the last attempt.');
     end

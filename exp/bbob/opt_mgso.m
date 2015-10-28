@@ -40,6 +40,9 @@ for ilaunch = 1:1e4; % up to 1e4 times
   opts.upperBound = ub';
   % 2) Gaussian process' related settings
   opts.trainAlgorithm = sgParams.modelOpts.trainAlgorithm;
+  if (iscell(sgParams.modelOpts.covFunc))
+    sgParams.modelOpts.covFunc = {sgParams.modelOpts.covFunc};
+  end
   opts.model   = modelInit(dim, sgParams.modelOpts.hyp, sgParams.modelOpts.meanFunc, sgParams.modelOpts.covFunc);
   % 3) DOE (Design of Experiments)
   opts.doe.n = eval(sgParams.doe_n);
