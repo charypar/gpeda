@@ -1,6 +1,6 @@
 .DS_Store
 *.mat
-
+tags
 exp/bbob/output
 paper/ppdata
 *.aux

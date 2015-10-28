@@ -14,7 +14,7 @@ opts.upperBound = ones(1, DIM) * 5;
 opts.trainAlgorithm = 'fmincon';
 
 % DOE
-opts.doe.n = popSize            % TODO test how to set this
+opts.doe.n = popSize;            % TODO test how to set this
 opts.doe.minTolX = 0.002;
 
 % SAMPLER
@@ -26,8 +26,8 @@ opts.eval.handle = @(x)( feval(FUN, x')' );
 % Rescale Conditions
 rescaleConds = {@stopTolX, @stopTolXDistRatio, @stopLowLogpdf};
 opts.rescale = {
-  struct('tolerance', 0.1),
-  struct('tolerance', 0.5),
+  struct('tolerance', 0.1), ...
+  struct('tolerance', 0.5), ...
   struct('tolerance', log(0.05))
 };
 
@@ -40,7 +40,7 @@ opts.restart = {
 % Stop Conditions
 stopConds = {@stopTotEvals, @stopTargetReached};
 opts.stop = {
-  struct('evaluations', maxfunevals),
+  struct('evaluations', maxfunevals), ...
   struct('target', ftarget)
 };
 

@@ -161,7 +161,7 @@ while i < abs(length)                                      % while not finished
 
   if abs(d3) < -SIG*d0 && f3 < f0+x3*RHO*d0          % if line search succeeded
     X = X+x3*s; f0 = f3; fX = [fX' f0]';                     % update variables
-    % EDITED turned off the debug output
+    % bajeluk: turned off the debug output
     % fprintf('%s %6i;  Value %4.6e\r', S, i, f0);
     if exist('fflush','builtin') fflush(stdout); end
     s = (df3'*df3-df0'*df3)/(df0'*df0)*s - df3;   % Polack-Ribiere CG direction
@@ -183,7 +183,7 @@ while i < abs(length)                                      % while not finished
   end
 end
 X = rewrap(Z,X); 
-% EDITED turned off the debug output
+% bajeluk: turned off the debug output
 % fprintf('\n'); if exist('fflush','builtin') fflush(stdout); end
 
 function v = unwrap(s)
