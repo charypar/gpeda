@@ -43,7 +43,7 @@ function bbob_test_01(id, exp_id, path, varargin)
   instances = bbParams.instances;
   maxfunevals = bbParams.maxfunevals;
 
-  % try
+  try
 
   for dim = bbParams.dimensions            % small dimensions first, for CPU reasons
     % for ifun = benchmarks('FunctionIndices')  % or benchmarksnoisy(...)
@@ -121,7 +121,6 @@ function bbob_test_01(id, exp_id, path, varargin)
     fprintf('---- dimension %d-D done ----\n', dim);
   end
 
-  %{
   catch err
     save([resultsFile '_ERROR.mat']);
     fprintf('#########################################################\n'); 
@@ -139,9 +138,8 @@ function bbob_test_01(id, exp_id, path, varargin)
     end
     fprintf('#########################################################\n'); 
     fprintf('#########################################################\n'); 
-    % exit(1);
+    exit(1);
   end
-  %}
 end
 
 function [exp_results, tmpFile] = runTestsForAllInstances(opt_function, id, exp_settings, datapath, opt, maxrestarts, maxfunevals, minfunevals, t0, exppath)
