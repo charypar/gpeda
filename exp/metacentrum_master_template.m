@@ -28,7 +28,7 @@ function metacentrum_master_template(exp_id, varargin)
   end
 
   pbs_max_workers = 50;
-  pbs_params = ['-l walltime=' walltime ',nodes=^N^:ppn=1,mem=1gb,scratch=1gb,matlab_MATLAB_Distrib_Comp_Engine=^N^'];
+  pbs_params = ['-l walltime=' walltime ',nodes=^N^:ppn=1,mem=2gb,scratch=1gb,matlab_MATLAB_Distrib_Comp_Engine=^N^'];
 
   % sched = findResource('scheduler','type','torque');
   % set(sched,'ClusterOsType', 'unix');
