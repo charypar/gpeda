@@ -36,8 +36,10 @@ end
 if ~isfield(hyp, 'mean')
   hyp.mean = [0];
 end
-if nargin > 3
+if nargin >= 3
   mean = varargin{2};
+end
+if nargin >= 4
   cov = varargin{3};
 end
 
@@ -46,9 +48,9 @@ if nargin < 5
   inf = @infExact;
   % inf = @infLaplace;
 
-  if ~isfield(hyp, 'inf')
-    hyp.inf = log(0.001);
-  end
+  % if ~isfield(hyp, 'inf')
+  %   hyp.inf = log(0.001);
+  % end
   if ~isfield(hyp, 'lik')
     hyp.lik = log(0.0001);
   end
@@ -67,5 +69,13 @@ M = struct( ...
   'covfunc', cov, ...
   'likfunc', lik ...
 );
+
+% This is a work-around:
+% to be able to fill a 2-value cell array into struct in initialization, it 
+% has to be in "doubled" cell array: {{covfunc, param1}}. Here, the doubled
+% cellarray is deleted.
+if (iscell(M.covfunc) && iscell(M.covfunc{1}))
+  M.covfunc = M.covfunc{:};
+end
 
 end

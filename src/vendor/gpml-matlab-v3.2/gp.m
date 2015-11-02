@@ -119,7 +119,7 @@ catch
   else 
     warning('GP:InferenceFailed','Inference method failed [%s] .. attempting to continue',msgstr)
     % FIXED added inf into the dnlZ struct on the next line
-    dnlZ = struct('cov',0*hyp.cov, 'mean',0*hyp.mean, 'lik',0*hyp.lik, 'inf', 0*hyp.inf);
+    dnlZ = struct('cov',0*hyp.cov, 'mean',0*hyp.mean, 'lik',0*hyp.lik); % , 'inf', 0*hyp.inf);
     varargout = {NaN, dnlZ}; return                    % continue with a warning
   end
 end

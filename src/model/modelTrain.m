@@ -35,12 +35,14 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
   
   % lower and upper bounds
   lb_hyp.cov = -2 * ones(size(hyp.cov));
-  lb_hyp.inf = log(1e-7);
+  % INF is not a hyperparameter!!!
+  % lb_hyp.inf = log(1e-7);
   lb_hyp.lik = log(1e-7);
   lb_hyp.mean = -Inf;
   lb = unwrap(lb_hyp)';
   ub_hyp.cov = 25 * ones(size(hyp.cov));
-  ub_hyp.inf = log(7);
+  % INF is not a hyperparameter!!!
+  % ub_hyp.inf = log(7);
   ub_hyp.lik = log(7);
   ub_hyp.mean = Inf;
   ub = unwrap(ub_hyp)';
@@ -106,7 +108,7 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
   if (strcmp(alg, 'cmaes'))
     cmaesopt.LBounds = lb';
     cmaesopt.UBounds = ub';
-    cmaesopt.SaveVariables = false;
+    cmaesopt.SaveVariables = 0;
     if (length(hyp.cov) > 2)
       % there is ARD covariance
       % try run cmaes for 500 funevals to get bounds for covariances
