@@ -377,7 +377,12 @@ function [pop fval exflag] = findModelMinimum(model, thisAttempt, dim)
     'Tolfun', 1e-10, ...
     'TolX', 1e-10, ...
     'Display', 'off');
-  [pop fval exflag output] = fminsearch(gp_predict, thisAttempt.bests.x(end,:), fminoptions);
+  if (~isfield(thisAttempt.bests, 'x') || isempty(thisAttempt.bests.x))
+    startx = 2 * rand(1, dim) - 1;
+  else
+    startx = thisAttempt.bests.x(end,:);
+  end
+  [pop fval exflag output] = fminsearch(gp_predict, startx, fminoptions);
   disp(['  fminsearch(): ' num2str(output.funcCount) ' evaluations.']);
 end
 
