@@ -109,6 +109,7 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
     cmaesopt.LBounds = lb';
     cmaesopt.UBounds = ub';
     cmaesopt.SaveVariables = 0;
+    cmaesopt.LogModulo = 0;
     if (length(hyp.cov) > 2)
       % there is ARD covariance
       % try run cmaes for 500 funevals to get bounds for covariances
