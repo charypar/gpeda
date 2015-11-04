@@ -5,6 +5,7 @@ function bbob_test_01(id, exp_id, path, varargin)
 %               (BBOB parameters, surrogateOpts and CMA-ES parameters)
 %   exp_id      unique string identifier of the experiment
 %   path        directory where experiment output data will be placed
+%   OPTARG1     directory where local files should be placed ("scratchdir" at metacentrum)
 
   % GNUPlot script where special strings will be replaced
   gnuplotScript = 'twoAlgsPlotExtended.gpi';
@@ -20,7 +21,7 @@ function bbob_test_01(id, exp_id, path, varargin)
   bbobpath = 'vendor/bbob';    % should point to fgeneric.m etc.
   pathstr = fileparts(mfilename('fullpath'));
   localDatapath = [];
-  if (nargin >= 4)
+  if (nargin >= 4 && ~isempty(varargin{1}))
     datapath = [varargin{1} filesep 'bbob_output'];
     if (isempty(strfind(datapath, path)))
       localDatapath = [exppath filesep 'bbob_output'];
@@ -212,8 +213,8 @@ function [exp_results, tmpFile] = runTestsForAllInstances(opt_function, id, exp_
     exp_id = exp_settings.exp_id;
     save(tmpFile, 'exp_settings', 'exp_id', 'y_evals');
 
+    % copy the output to the final storage (if OUTPUTDIR and EXPPATH differs)
     if (~isempty(localDatapath))
-      % copy the output to the final storage (if OUTPUTDIR and EXPPATH differs)
       system(['cp -pR ' datapath ' ' localDatapath '/']);
     end
   end
