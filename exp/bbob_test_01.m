@@ -19,11 +19,12 @@ function bbob_test_01(id, exp_id, path, varargin)
   maxrestarts = 1e4;        % SET to zero for an entirely deterministic algorithm
   bbobpath = 'vendor/bbob';    % should point to fgeneric.m etc.
   pathstr = fileparts(mfilename('fullpath'));
-  remoteDatapath = [];
+  localDatapath = [];
   if (nargin >= 4)
-    datapath = [varargin{1} filesep 'bbob_output']
-    if (~ strfind(datapath, path))
-      remoteDatapath = datapath;
+    datapath = [varargin{1} filesep 'bbob_output'];
+    if (isempty(strfind(datapath, path)))
+      localDatapath = [exppath filesep 'bbob_output'];
+      [~, ~] = mkdir(localDatapath);
     end
   else
     datapath = [exppath filesep 'bbob_output'];
@@ -65,7 +66,7 @@ function bbob_test_01(id, exp_id, path, varargin)
       datapath = [datapath filesep expFileID];
       [~, ~] = mkdir(datapath);
 
-      [exp_results, tmpFile] = runTestsForAllInstances(bbParams.opt_function, id, exp_settings, datapath, opt, maxrestarts, eval(maxfunevals), eval(minfunevals), t0, exppath, remoteDatapath);
+      [exp_results, tmpFile] = runTestsForAllInstances(bbParams.opt_function, id, exp_settings, datapath, opt, maxrestarts, eval(maxfunevals), eval(minfunevals), t0, exppath, localDatapath);
 
       y_evals = exp_results.y_evals;
 
@@ -81,7 +82,7 @@ function bbob_test_01(id, exp_id, path, varargin)
       cmaesResultsFile = [exppath filesep 'cmaes_results' filesep exp_id '_purecmaes_' num2str(ifun) '_' num2str(dim) 'D_' num2str(cmaesId) '.mat'];
       if (~ exist(cmaesResultsFile, 'file'))
         opt.algName = [exp_id '_' expFileID '_cmaes'];
-        exp_cmaes_results = runTestsForAllInstances(@opt_cmaes, id, exp_settings, datapath, opt, maxrestarts, eval(maxfunevals), eval(minfunevals), t0, exppath, remoteDatapath);
+        exp_cmaes_results = runTestsForAllInstances(@opt_cmaes, id, exp_settings, datapath, opt, maxrestarts, eval(maxfunevals), eval(minfunevals), t0, exppath, localDatapath);
 
         % test if the results still doesn't exist, if no, save them :)
         if (~ exist(cmaesResultsFile, 'file'))
@@ -145,7 +146,7 @@ function bbob_test_01(id, exp_id, path, varargin)
   end
 end
 
-function [exp_results, tmpFile] = runTestsForAllInstances(opt_function, id, exp_settings, datapath, opt, maxrestarts, maxfunevals, minfunevals, t0, exppath, remoteDatapath)
+function [exp_results, tmpFile] = runTestsForAllInstances(opt_function, id, exp_settings, datapath, opt, maxrestarts, maxfunevals, minfunevals, t0, exppath, localDatapath)
   y_evals = cell(0);
 
   t = tic;
@@ -211,9 +212,9 @@ function [exp_results, tmpFile] = runTestsForAllInstances(opt_function, id, exp_
     exp_id = exp_settings.exp_id;
     save(tmpFile, 'exp_settings', 'exp_id', 'y_evals');
 
-    if (~isempty(remoteDatapath))
+    if (~isempty(localDatapath))
       % copy the output to the final storage (if OUTPUTDIR and EXPPATH differs)
-      system(['cp -r ' remoteDatapath '/* ' EXPPATH '/']);
+      system(['cp -pR ' datapath ' ' localDatapath '/']);
     end
   end
   disp(['      date and time: ' num2str(clock, ' %.0f')]);
