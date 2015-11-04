@@ -154,6 +154,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % if one of the restart conditions occurs
   if doRestart || (isfield(options, 'restart') && evalconds(restart, run, options.restart))
     disp('Restart conditions met, starting over...');
+
     run.attempt = run.attempt + 1;
     att = run.attempt;
   
@@ -161,6 +162,12 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     run.attempts{att} = initAttempt(lb, ub, eval_fcn, doe, options);
     run.notSPDCovarianceErrors = [];
     doRestart = 0;
+
+    % free the not-needed memory for RESTART
+    rmfield(run.attempts{att-1}, 'dataset');
+    rmfield(run.attempts{att-1}, 'model');
+    rmfield(run.attempts{att-1}, 'populations');
+
   elseif doRescale || isfield(options, 'rescale') && evalconds(rescale, run, options.rescale)
     [nlb nub] = computeRescaleLimits(run.attempts{att}, dim);
 
@@ -171,13 +178,18 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
       % doRestart = 1;
     elseif (run.attempts{att}.iterations > 1)
       disp('Rescaling conditions met, zooming in...');
+
       run.attempts{att}.rescaleFlag = 1;
       run.attempt = run.attempt + 1;
       att = run.attempt;
 
       run.attempts{att} = initRescaleAttempt(run.attempts{att-1}, nlb, nub, options);
       disp('Got rescale attempt');
-      run.attempts{att};
+
+      % free the not-needed memory for RESCALE
+      rmfield(run.attempts{att-1}, 'dataset');
+      rmfield(run.attempts{att-1}, 'model');
+      rmfield(run.attempts{att-1}, 'populations');
     else
       disp('Rescaling canceled, rescale was already in the last attempt.');
     end
