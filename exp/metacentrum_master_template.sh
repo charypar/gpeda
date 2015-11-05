@@ -26,7 +26,7 @@ export EXPPATH_SHORT
 export ID
 
 for ID in $IDS; do
-  echo qsub -N "${EXPID}__${ID}" -v EXPID,ID,EXPPATH_SHORT $EXPPATH_SHORT/$EXPID/binary_task.sh
+  qsub -N "${EXPID}__${ID}" -l "walltime=$QUEUE" -v EXPID,ID,EXPPATH_SHORT $EXPPATH_SHORT/$EXPID/binary_task.sh
   if [ ! $? -eq 0 ] ; then
     echo "Nepodarilo se zadat ulohu segment ${ID}! Koncim."; exit 1
   else

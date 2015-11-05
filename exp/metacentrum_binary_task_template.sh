@@ -1,5 +1,4 @@
 #!/bin/sh
-#PBS -l walltime=1d
 #PBS -l nodes=1:ppn=1
 #PBS -l mem=2gb
 #PBS -l scratch=1gb
@@ -21,13 +20,13 @@ fi
 # clean up the lock-file
 trap "rm -f $EXPPATH/queued_$ID" TERM EXIT
 
-cd "$EXPPATH_SHORT/../.."
+cd "$EXPPATH_SHORT/.."
 ulimit -t unlimited
 
 ######### CALL #########
 #
-metacentrum_task_matlab "$EXPID" "$EXPPATH_SHORT" $ID
+./metacentrum_task_matlab "$EXPID" "$EXPPATH_SHORT" $ID
 #
 ########################
 
-echo `date "+%Y-%m-%d %H:%M:%S"` "  **$EXPID** at [$MACHINE] ==== FINISHED ===="
+echo `date "+%Y-%m-%d %H:%M:%S"` "  **$EXPID**  ==== FINISHED ===="
