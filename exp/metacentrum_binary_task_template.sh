@@ -3,6 +3,9 @@
 #PBS -l mem=2gb
 #PBS -l scratch=1gb
 
+# MATLAB Runtime environment
+export LD_LIBRARY_PATH=/storage/plzen1/home/bajeluk/bin/mcr/v90/runtime/glnxa64:/storage/plzen1/home/bajeluk/bin/mcr/v90/bin/glnxa64:/storage/plzen1/home/bajeluk/bin/mcr/v90/sys/os/glnxa64:$LD_LIBRARY_PATH
+
 export SCRATCHDIR
 export LOGNAME
 EXPPATH="$EXPPATH_SHORT/$EXPID"
