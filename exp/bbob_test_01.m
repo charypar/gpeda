@@ -10,12 +10,16 @@ function bbob_test_01(id, exp_id, path, varargin)
   % GNUPlot script where special strings will be replaced
   gnuplotScript = 'twoAlgsPlotExtended.gpi';
 
+  % GnuPlot script should be in $ALGROOT/exp/
+  gnuplotScript = [path filesep '..' gnuplotScript];
+  % Directory for internal results of _this_ function
   exppath = [path filesep exp_id];
+
+  % load parameters and settings for this instance 'id'
   load([exppath filesep 'params.mat']);
   [bbParams, surrogateParams, cmaesParams, nNonBbobValues] = getParamsFromIndex(id, bbParamDef, sgParamDef, {});
-  addpath(exppath);
   
-  % BBOB constant parameters
+  % BBOB constant parameters (BBOB sources should be added via startup)
   minfunevals = 'dim + 2';  % PUT MINIMAL SENSIBLE NUMBER OF EVALUATIONS for a restart
   maxrestarts = 1e4;        % SET to zero for an entirely deterministic algorithm
   bbobpath = 'vendor/bbob';    % should point to fgeneric.m etc.
@@ -31,8 +35,7 @@ function bbob_test_01(id, exp_id, path, varargin)
     datapath = [exppath filesep 'bbob_output'];
   end
   [~, ~] = mkdir(datapath);
-  addpath([pathstr filesep bbobpath]);
-  gnuplotScript = [pathstr filesep gnuplotScript];
+
   % opt.algName = exp_description;
   opt.comments = '';
 

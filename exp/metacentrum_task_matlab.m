@@ -14,6 +14,13 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   % setting up paths
   OUTPUTDIR = getenv('SCRATCHDIR');     % empty/'' if $SCRATCHDIR var does not exist
 
+  % rename queued_file to computing_file
+  queuedFile = [exppath_short filesep exp_id filesep 'queued_' num2str(id)];
+  calculatingFile = [exppath_short filesep exp_id filesep 'calculating_' num2str(id)];
+  if (exist(queuedFile, 'file'))
+    movefile(queuedFile, calculatingFile);
+  end
+
   % parameters of the current job
   if (ischar(id)) id = str2num(id); end
   load([exppath_short filesep exp_id '/params.mat'], 'bbParamDef', 'sgParamDef', 'cmParamDef');

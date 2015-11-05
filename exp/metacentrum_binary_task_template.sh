@@ -3,6 +3,13 @@
 #PBS -l mem=2gb
 #PBS -l scratch=1gb
 
+# it suppose the following variables set:
+#
+#   ID             -- integer idetificating this task
+#   EXPID          -- string with unique identifier of the whole experiment
+#   EXPPATH_SHORT  -- usually $APPROOT/exp/experiments
+# 
+
 # MATLAB Runtime environment
 export LD_LIBRARY_PATH=/storage/plzen1/home/bajeluk/bin/mcr/v90/runtime/glnxa64:/storage/plzen1/home/bajeluk/bin/mcr/v90/bin/glnxa64:/storage/plzen1/home/bajeluk/bin/mcr/v90/sys/os/glnxa64:$LD_LIBRARY_PATH
 
@@ -20,8 +27,8 @@ if [ -z "$EXPPATH_SHORT" ] ; then
   echo "Error: directory with the experiment is not known"; exit 1
 fi
 
-# clean up the lock-file
-trap "rm -f $EXPPATH/queued_$ID" TERM EXIT
+# clean up the lock-file(s) on exit
+trap "rm -f $EXPPATH/calculating_$ID $EXPPATH/queued_$ID" TERM EXIT
 
 cd "$EXPPATH_SHORT/.."
 ulimit -t unlimited
