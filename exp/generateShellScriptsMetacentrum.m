@@ -5,6 +5,7 @@ fNameMetacentrumTaskTemplate = ['exp' filesep 'metacentrum_task_template.sh'];
 fNameTask = [exppath filesep exp_id '_task.sh'];
 fNameTaskShell = ['$EXPPATH_SHORT/$EXPID/${EXPID}_task.sh'];
 fNameMng =  [exppath filesep exp_id '_manager.sh'];
+fNameAllIds = [exppath filesep 'allids.txt'];
 logDir = '/storage/plzen1/home/bajeluk/public';
 
 % walltime = '1d';
@@ -19,6 +20,15 @@ logDir = '/storage/plzen1/home/bajeluk/public';
 % Divide instances to machines
 params = [bbParamDef, sgParamDef, cmParamDef];
 nCombinations = structReduce(params, @(s,x) s*length(x.values), 1);
+
+% Export textfile with all the combinations' IDs
+fIds = fopen(fNameAllIds, 'w');
+if (fIds > 0)
+  for id = 1:nCombinations
+    fprintf(fIds, '%d ', id);
+  end
+  fprintf(fIds, '\n');
+end
 
 % Estimate the running time based on the dimensions and inline function
 % provided to divideTasksForMachines()

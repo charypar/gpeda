@@ -1,4 +1,4 @@
-function metacentrum_task_matlab(exp_id, exppath_short, fun, dim, id, varargin)
+function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
 
   % NFS file for logging results
   USE_FILELOG = 0;
@@ -14,10 +14,23 @@ function metacentrum_task_matlab(exp_id, exppath_short, fun, dim, id, varargin)
   % setting up paths
   OUTPUTDIR = getenv('SCRATCHDIR');     % empty/'' if $SCRATCHDIR var does not exist
 
+  % parameters of the current job
+  load([exppath_short filesep exp_id '/params.mat'], 'bbParamDef', 'sgParamDef', 'cmParamDef');
+  [bbParams, sgParams] = getParamsFromIndex(id, bbParamDef, sgParamDef, cmParamDef);
+  fun = bbParams.functions(end);
+  dim = bbParams.dimensions(end);
+  if (isfield(sgParams, 'modelType'))
+    model = sgParams.modelType;
+  else
+    model = 'NONE';
+  end
+  metaOpts.nInstances = length(bbParams.instances);
+
+  % obsolete:
   % convert from string to integer (if supplied on commandline)
-  if (ischar(fun)) fun = str2num(fun); end
-  if (ischar(dim)) dim = str2num(dim); end
-  if (ischar(id)) id = str2num(id); end
+  % if (ischar(fun)) fun = str2num(fun); end
+  % if (ischar(dim)) dim = str2num(dim); end
+  % if (ischar(id)) id = str2num(id); end
 
   % setting up paths (contd.)
   EXPPATH = [exppath_short filesep exp_id];
@@ -32,10 +45,12 @@ function metacentrum_task_matlab(exp_id, exppath_short, fun, dim, id, varargin)
   % MACHINE=`head -1 $PBS_NODEFILE`
 
   % metaOpts -- structure with info about current Task and Metacentrum environ. variables
-  if (nargin >= 6)
+  if (nargin >= 4)
     metaOpts = varargin{1};
   else
-    metaOpts = struct( 'logdir', '', 'model', '', 'machine', '', 'nInstances', 0);
+    metaOpts.model = model;
+    metaOpts.logdir = '';
+    metaOpts.machine = '';
   end
   nodeFile = fopen(getenv('PBS_NODEFILE'), 'r');
   if (nodeFile > 0)
