@@ -1,4 +1,4 @@
-function [x, ilaunch, y_evals, stopflag] = opt_mgso(FUN, dim, ftarget, maxfunevals, id)
+function [x, ilaunch, y_evals, stopflag] = opt_mgso(FUN, dim, ftarget, maxfunevals, id, exppath)
 % minimizes FUN in DIM dimensions by multistarts of fminsearch.
 % ftarget and maxfunevals are additional external termination conditions,
 % where at most 2 * maxfunevals function evaluations are conducted.
@@ -19,7 +19,8 @@ fDelta = 1e-8;
 y_evals  = [];
 stopflag = [];
 
-load('params.mat', 'bbParamDef', 'sgParamDef');
+% load parameters and settings for this instance 'id'
+load([exppath filesep 'params.mat'], 'bbParamDef', 'sgParamDef');
 [bbParams, sgParams] = getParamsFromIndex(id, bbParamDef, sgParamDef, {});
 
 % refining multistarts

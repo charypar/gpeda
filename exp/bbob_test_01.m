@@ -175,7 +175,7 @@ function [exp_results, tmpFile] = runTestsForAllInstances(opt_function, id, exp_
         fgeneric('restart', 'independent restart')
       end
       [xopt, ilaunch, ye, stopflag] = opt_function('fgeneric', exp_settings.dim, fgeneric('ftarget'), ...
-                  maxfunevals, id);
+                  maxfunevals, id, exppath);
       % we don't have this information from CMA-ES :(
       % ye = [res.deltasY res.evaluations];
 
