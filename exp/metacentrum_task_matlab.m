@@ -15,6 +15,7 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   OUTPUTDIR = getenv('SCRATCHDIR');     % empty/'' if $SCRATCHDIR var does not exist
 
   % parameters of the current job
+  if (ischar(id)) id = str2num(id); end
   load([exppath_short filesep exp_id '/params.mat'], 'bbParamDef', 'sgParamDef', 'cmParamDef');
   [bbParams, sgParams] = getParamsFromIndex(id, bbParamDef, sgParamDef, cmParamDef);
   fun = bbParams.functions(end);
