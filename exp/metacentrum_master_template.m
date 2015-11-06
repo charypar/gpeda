@@ -6,7 +6,10 @@ function metacentrum_master_template(exp_id, varargin)
 % varargin{2}   -- string defining maximum (wall)time for Metacentrum machines
 %                  default: 4h
 
-  load(['/storage/plzen1/home/' getenv('LOGNAME') '/prg/gpeda/exp/experiments/' exp_id '/params.mat']);
+  EXPPATH_SHORT = ['/storage/plzen1/home/' getenv('LOGNAME') '/prg/gpeda/exp/experiments'];
+  PARAMS_FILE   = [EXPPATH_SHORT filesep exp_id filesep 'params.mat'];
+
+  load(PARAMS_FILE);
 
   fNameJobDef = [exppath_short filesep exp_id filesep exp_id '_metajob.mat'];
   cd([exppath_short filesep '..' filesep '..']);

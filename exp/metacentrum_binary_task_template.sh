@@ -5,7 +5,7 @@
 
 # it suppose the following variables set:
 #
-#   ID             -- integer idetificating this task
+#   ID             -- integer idetificating this task's ID
 #   EXPID          -- string with unique identifier of the whole experiment
 #   EXPPATH_SHORT  -- usually $APPROOT/exp/experiments
 # 
