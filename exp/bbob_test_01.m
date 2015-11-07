@@ -11,12 +11,12 @@ function bbob_test_01(id, exp_id, path, varargin)
   gnuplotScript = 'twoAlgsPlotExtended.gpi';
 
   % GnuPlot script should be in $ALGROOT/exp/
-  gnuplotScript = [path filesep '..' gnuplotScript];
+  gnuplotScript = [path filesep '..' filesep gnuplotScript];
   % Directory for internal results of _this_ function
   exppath = [path filesep exp_id];
 
   % load parameters and settings for this instance 'id'
-  load([exppath filesep 'params.mat']);
+  load([exppath filesep 'params.mat'], 'bbParamDef', 'sgParamDef');
   [bbParams, surrogateParams, cmaesParams, nNonBbobValues] = getParamsFromIndex(id, bbParamDef, sgParamDef, {});
   
   % BBOB constant parameters (BBOB sources should be added via startup)
