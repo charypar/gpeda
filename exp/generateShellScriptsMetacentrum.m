@@ -2,7 +2,9 @@
 %  - oddelit SRC/EXPERIMENT-DEFINITION a OUTPUT directory
 
 fNameMetacentrumTaskTemplate = ['exp' filesep 'metacentrum_task_template.sh'];
+fNameMetacentrumTaskTemplateBinary = ['exp' filesep 'metacentrum_binary_task_template.sh'];
 fNameTask = [exppath filesep exp_id '_task.sh'];
+fNameTaskBinary = [exppath filesep 'binary_task.sh'];
 fNameTaskShell = ['$EXPPATH_SHORT/$EXPID/${EXPID}_task.sh'];
 fNameMng =  [exppath filesep exp_id '_manager.sh'];
 fNameAllIds = [exppath filesep 'allids.txt'];
@@ -47,6 +49,8 @@ estTimes = dimensions; % + 3*models.*dimensions;
 % copy task shell script into the directory with the experiment
 copyfile([pathstr filesep '..' filesep '..' filesep fNameMetacentrumTaskTemplate], fNameTask);
 fileattrib(fNameTask, '+x');
+copyfile([pathstr filesep '..' filesep '..' filesep fNameMetacentrumTaskTemplateBinary], fNameTaskBinary);
+fileattrib(fNameTaskBinary, '+x');
 
 % Generate managing .sh script
 fMng = fopen(fNameMng, 'w'); 

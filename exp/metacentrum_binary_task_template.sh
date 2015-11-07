@@ -1,6 +1,6 @@
 #!/bin/sh
 #PBS -l nodes=1:ppn=1
-#PBS -l mem=2gb
+#PBS -l mem=1gb
 #PBS -l scratch=1gb
 
 # it suppose the following variables set:
