@@ -147,7 +147,7 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   % ( should be done already in bbob_test_01() )
   if (~isempty(OUTPUTDIR) && ~strcmpi(OUTPUTDIR, EXPPATH))
     % copy the output to the final storage (if OUTPUTDIR and EXPPATH differs)
-    system(['cp -r ' OUTPUTDIR '/* ' EXPPATH '/']);
+    system(['cp -pR ' OUTPUTDIR '/* ' EXPPATH '/']);
   end
 
 end
