@@ -24,11 +24,11 @@ function bbob_test_01(id, exp_id, path, varargin)
   maxrestarts = 1e4;        % SET to zero for an entirely deterministic algorithm
   bbobpath = 'vendor/bbob';    % should point to fgeneric.m etc.
   pathstr = fileparts(mfilename('fullpath'));
-  localDatapath = [];
+  localDatapath = [];       % directory in the shared folder where results of each instance will be copied through the progress
   if (nargin >= 4 && ~isempty(varargin{1}))
     datapath = [varargin{1} filesep 'bbob_output'];
     if (isempty(strfind(datapath, path)))
-      localDatapath = [exppath filesep 'bbob_output'];
+      localDatapath = [exppath filesep 'bbob_output_tmp'];
       [~, ~] = mkdir(localDatapath);
     end
   else
@@ -86,7 +86,7 @@ function bbob_test_01(id, exp_id, path, varargin)
       cmaesResultsFile = [exppath filesep 'cmaes_results' filesep exp_id '_purecmaes_' num2str(ifun) '_' num2str(dim) 'D_' num2str(cmaesId) '.mat'];
       if (~ exist(cmaesResultsFile, 'file'))
         opt.algName = [exp_id '_' expFileID '_cmaes'];
-        exp_cmaes_results = runTestsForAllInstances(@opt_cmaes, id, exp_settings, datapath, opt, maxrestarts, eval(maxfunevals), eval(minfunevals), t0, exppath, localDatapath);
+        exp_cmaes_results = runTestsForAllInstances(@opt_cmaes, id, exp_settings, datapath, opt, maxrestarts, eval(maxfunevals), eval(minfunevals), t0, exppath, '');
 
         % test if the results still doesn't exist, if no, save them :)
         if (~ exist(cmaesResultsFile, 'file'))
