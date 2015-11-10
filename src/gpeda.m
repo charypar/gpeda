@@ -63,7 +63,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   M = run.attempts{att}.model;
   pop = []; tolXDistRatio = 0;
 
-  fprintf('\n-- Attempt %d, iteration %d --', att, it);
+  fprintf('\n-- Attempt %d, iteration %d --\n', att, it);
 
   % train model
   disp('Training model...'  );

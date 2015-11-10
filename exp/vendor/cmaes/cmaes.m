@@ -280,6 +280,9 @@ defopts.LogPlot = 'off    % plot while running using output data files';
 defopts.UserData = 'for saving data/comments associated with the run';
 defopts.UserDat2 = ''; 'for saving data/comments associated with the run';
 
+% bajeluk, 2015-11-10
+MAX_NAN_TRIES = 1000;
+
 % ---------------------- Handling Input Parameters ----------------------
 
 if nargin < 1 || isequal(fitfun, 'defaults') % pass default options
@@ -972,8 +975,26 @@ while isempty(stopflag)
                  ' NaN objective function values at evaluation ' ...
                  num2str(counteval)]);
       end
+
+      % bajeluk: limit the number of tries of repairing NaNs
+      if (tries > MAX_NAN_TRIES)
+        break;
+      end
+
     end
     counteval = counteval + 1; % retries due to NaN are not counted
+
+    % bajeluk: limit the number of tries of repairing NaNs
+    if (tries > MAX_NAN_TRIES)
+      break;
+    end
+  end
+
+  % there are still some NaNs :(
+  if (any(isnan(fitness.raw)))
+    % discard the current population and
+    % END THE CMA-ES -- TODO: with an exception?
+    return;
   end
 
   fitness.sel = fitness.raw; 

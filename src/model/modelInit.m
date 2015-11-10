@@ -27,8 +27,8 @@ else
   hyp.lik = log(0.0001);
 end
 
-mean = {@meanConst};
-cov = {@covSEiso};
+meanFunc = {@meanConst};
+covFunc = {@covSEiso};
 
 if ~isfield(hyp, 'cov')
   hyp.cov = log([ones(1,dim), 1]);
@@ -37,10 +37,13 @@ if ~isfield(hyp, 'mean')
   hyp.mean = [0];
 end
 if nargin >= 3
-  mean = varargin{2};
+  meanFunc = varargin{2};
 end
 if nargin >= 4
-  cov = varargin{3};
+  covFunc = varargin{3};
+  if (iscell(covFunc) && ~iscell(covFunc{1}))
+    covFunc = {covFunc};
+  end
 end
 
 if nargin < 5
@@ -65,8 +68,8 @@ M = struct( ...
   'dim', dim, ...
   'hyp', hyp, ...
   'inffunc', inf, ...
-  'meanfunc', mean, ...
-  'covfunc', cov, ...
+  'meanfunc', meanFunc, ...
+  'covfunc', covFunc, ...
   'likfunc', lik ...
 );
 

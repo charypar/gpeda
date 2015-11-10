@@ -38,13 +38,13 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
   % INF is not a hyperparameter!!!
   % lb_hyp.inf = log(1e-7);
   lb_hyp.lik = log(1e-7);
-  lb_hyp.mean = -Inf;
+  lb_hyp.mean = -1e6;
   lb = unwrap(lb_hyp)';
   ub_hyp.cov = 25 * ones(size(hyp.cov));
   % INF is not a hyperparameter!!!
   % ub_hyp.inf = log(7);
   ub_hyp.lik = log(7);
-  ub_hyp.mean = Inf;
+  ub_hyp.mean = 1e6;
   ub = unwrap(ub_hyp)';
   
   % lb = [-10 -10 log(1e-7) log(1e-7) -Inf];
@@ -106,6 +106,7 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
     end
   end
   if (strcmp(alg, 'cmaes'))
+    modelTrainNErrors = 0;
     cmaesopt.LBounds = lb';
     cmaesopt.UBounds = ub';
     cmaesopt.SaveVariables = 0;
@@ -115,7 +116,13 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       % try run cmaes for 500 funevals to get bounds for covariances
       MAX_DIFF = 2.5;
       cmaesopt.MaxFunEvals = 500;
-      [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
+      try
+        [opt, fval] = cmaes(f, linear_hyp', [], cmaesopt);
+      catch err
+        fprintf(2, 'Warning: CMA-ES (with limit %d evals) ended with an error.', cmaesopt.MaxFunEvals);
+        modelTrainNErrors = modelTrainNErros + 5;
+        throw(err);
+      end
       cov_median = median(opt(1:(end-4)));
       ub(1:(end-4)) = cov_median + MAX_DIFF;
       lb(1:(end-4)) = cov_median - MAX_DIFF;
@@ -123,11 +130,15 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       cmaesopt.UBounds = ub';
     end
     cmaesopt.MaxFunEvals = 2000;
-    [opt, fval] = cmaes(f, linear_hyp', [0.3*(ub(1:(end-1)) - lb(1:(end-1))) 100]', cmaesopt);
+    try
+      [opt, fval] = cmaes(f, linear_hyp', [], cmaesopt);
+    catch err
+      fprintf(2, 'Warning: CMA-ES (with limit %d evals) ended with an error.', cmaesopt.MaxFunEvals);
+      throw(err);
+    end
   end
 
   model.hyp = rewrap(hyp, opt);
-  modelTrainNErrors = 0;
   nErrors = modelTrainNErrors;
   Mout = model;
 

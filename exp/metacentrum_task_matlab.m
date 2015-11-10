@@ -65,11 +65,13 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
     metaOpts.machine = fgetl(nodeFile);
     fclose(nodeFile);
   end
-  if (~ isfield(metaOpts, 'logdir') || isempty(metaOpts.logdir))
-    LOGFILE = DEFAULTLOGFILE;
-    metaOpts.logdir = '/storage/plzen1/home/bajeluk/public/';
-  else
-    LOGFILE = [metaOpts.logdir filesep LOGFILENAME];
+  if (USE_FILELOG)
+    if (~ isfield(metaOpts, 'logdir') || isempty(metaOpts.logdir))
+      LOGFILE = DEFAULTLOGFILE;
+      metaOpts.logdir = '/storage/plzen1/home/bajeluk/public/';
+    else
+      LOGFILE = [metaOpts.logdir filesep LOGFILENAME];
+    end
   end
 
   % # relict from shell script
