@@ -129,12 +129,11 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
       cmaesopt.LBounds = lb';
       cmaesopt.UBounds = ub';
     end
-    cmaesopt.MaxFunEvals = 2000;
-    try
-      [opt, fval] = cmaes(f, linear_hyp', [], cmaesopt);
-    catch err
-      fprintf(2, 'Warning: CMA-ES (with limit %d evals) ended with an error.', cmaesopt.MaxFunEvals);
-      throw(err);
+    cmaesopt.MaxFunEvals = 1600;
+    [opt, fval] = cmaes(f, linear_hyp', [], cmaesopt);
+    if (isnan(fval))
+      fprintf(2, 'Warning: CMA-ES (with limit %d evals) ended with NaN.\n', cmaesopt.MaxFunEvals);
+      modelTrainNErrors = modelTrainNErrors + 25;
     end
   end
 
@@ -169,6 +168,15 @@ function [post nlZ dnlZ] = infExactCountErrors(hyp, mean, cov, lik, x, y)
 end
 
 function [nlZ dnlZ] = linear_gp(linear_hyp, s_hyp, inf, mean, cov, lik, x, y)
+  % bajeluk TESTING
+  % persistent nanMode;
+  % if ((~isempty(nanMode) && nanMode) || rand() < 0.05)
+  %   nanMode = true;
+  %   nlZ = NaN;
+  %   dnlZ = linear_hyp;
+  %   return;
+  % end
+
   hyp = rewrap(s_hyp, linear_hyp');
   [nlZ s_dnlZ] = gp(hyp, inf, mean, cov, lik, x, y);
   dnlZ = unwrap(s_dnlZ)';

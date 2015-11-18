@@ -280,9 +280,6 @@ defopts.LogPlot = 'off    % plot while running using output data files';
 defopts.UserData = 'for saving data/comments associated with the run';
 defopts.UserDat2 = ''; 'for saving data/comments associated with the run';
 
-% bajeluk, 2015-11-10
-MAX_NAN_TRIES = 1000;
-
 % ---------------------- Handling Input Parameters ----------------------
 
 if nargin < 1 || isequal(fitfun, 'defaults') % pass default options
@@ -353,6 +350,13 @@ if nargin < 4 || isempty(inopts) % no input options available
 else
   opts = getoptions(inopts, defopts);
 end
+
+% bajeluk, 2015-11-10
+MAX_NAN_TRIES = opts.MaxFunEvals;
+endCMAES = false;
+nanGenerations = 0;
+maxNanGenerations = 10;
+
 i = strfind(opts.SaveFilename, '%'); % remove everything after comment
 if ~isempty(i)
   opts.SaveFilename = opts.SaveFilename(1:i(1)-1);
@@ -968,16 +972,17 @@ while isempty(stopflag)
       fitness.raw(k) = feval(fitfun, arxvalid(:,k), varargin{:}); 
       tries = tries + 1;
       if isnan(fitness.raw(k))
-	countevalNaN = countevalNaN + 1;
+        countevalNaN = countevalNaN + 1;
       end
       if mod(tries, 100) == 0
-	warning([num2str(tries) ...
+        warning([num2str(tries) ...
                  ' NaN objective function values at evaluation ' ...
                  num2str(counteval)]);
       end
 
       % bajeluk: limit the number of tries of repairing NaNs
       if (tries > MAX_NAN_TRIES)
+        nanGenerations = nanGenerations + 1;
         break;
       end
 
@@ -986,15 +991,16 @@ while isempty(stopflag)
 
     % bajeluk: limit the number of tries of repairing NaNs
     if (tries > MAX_NAN_TRIES)
+      nanGenerations = nanGenerations + 1;
       break;
     end
   end
 
   % there are still some NaNs :(
-  if (any(isnan(fitness.raw)))
+  if (any(isnan(fitness.raw)) || nanGenerations > maxNanGenerations)
     % discard the current population and
     % END THE CMA-ES -- TODO: with an exception?
-    return;
+    endCMAES = true;
   end
 
   fitness.sel = fitness.raw; 
@@ -1117,6 +1123,9 @@ while isempty(stopflag)
   fitness.histsel(2:end) = fitness.histsel(1:end-1); % record short history of
   fitness.histsel(1) = fitness.sel(1);               % best sel fitness values
 
+  % bajeluk
+  if (~exist('endCMAES') || ~endCMAES)
+  
   % Calculate new xmean, this is selection and recombination 
   xold = xmean; % for speed up of Eq. (2) and (3)
   cmean = 1;  % 1/min(max((lambda-1*N)/2, 1), N);  % == 1/kappa
@@ -1575,6 +1584,9 @@ while isempty(stopflag)
   
   out.stopflag = stopflag;
 
+  % bajeluk
+  end
+  
   % ----- output generation -----
   if verbosemodulo > 0 && isfinite(verbosemodulo)
     if countiter == 1 || mod(countiter, 10*verbosemodulo) < 1 
@@ -1727,6 +1739,11 @@ while isempty(stopflag)
   time.t0 = clock;
 
   % ----- end output generation -----
+  
+  % bajeluk
+  if (exist('endCMAES', 'var') && endCMAES)
+    break;
+  end 
 
 end % while, end generation loop
 

@@ -68,7 +68,9 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   % train model
   disp('Training model...'  );
   [M_try nTrainErrors] = modelTrain(M, ds.x, ds.y, options);
-  run.notSPDCovarianceErrors = [run.notSPDCovarianceErrors nTrainErrors];
+  run.notSPDCovarianceErrors(end+1) = nTrainErrors;
+
+  maxLogPdf = 0;    % to be set in case sampling crashes
 
   if (nTrainErrors > maxTrainErrors) 
     disp('Too many errors while training model. Find and evaluate minimum of the GP model.');
@@ -88,7 +90,6 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
     run.attempts{att}.model = M;
     disp(['Sampling population ' int2str(it) '...']);
     try
-      maxLogPdf = 0;    % to be set in case sampling crashes
       [pop tolXDistRatio maxLogPdf] = sample(sampler, M, dim, options.popSize, run.attempts{att}, options.sampler);
       disp(['  DEBUG: maxPdf = ' num2str(exp(maxLogPdf))]);
       % find continuous minimum of the GP and add it or replace the nearest 
