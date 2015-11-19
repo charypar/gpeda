@@ -45,9 +45,9 @@ sgParamDef(9).values = { {
   struct('tolerance', 0.5), ...
   struct('tolerance', log(0.05)) } };
 sgParamDef(10).name   = 'restartConds';
-sgParamDef(10).values = { {@stopStallGen} };
+sgParamDef(10).values = { {@stopStallGen, @stopSmallPopulations} };
 sgParamDef(11).name   = 'restartCondsParams';
-sgParamDef(11).values = { {struct('generations', 5)} };
+sgParamDef(11).values = { {struct('generations', 5), struct('popSizeLimit', 3, 'iterationsLimit', 10)} };
 sgParamDef(12).name   = 'stopConds';
 sgParamDef(12).values = { {@stopTotEvals, @stopTargetReached} };
 sgParamDef(13).name   = 'stopCondsParams';

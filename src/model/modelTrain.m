@@ -13,6 +13,7 @@ global modelTrainNErrors;
 model = struct(M); % copy the original model
 model.dataset.x = x; model.dataset.y = y; % store dataset
 
+model.hyp.mean = median(y);
 hyp = model.hyp;
 
 alg = 'minimize';
@@ -32,23 +33,20 @@ if (strcmp(alg, 'fmincon') || strcmp(alg, 'cmaes'))
   
   linear_hyp = unwrap(hyp)';
   l_cov = length(hyp.cov);
+  minY = min(model.dataset.y);
+  maxY = max(model.dataset.y);
   
   % lower and upper bounds
   lb_hyp.cov = -2 * ones(size(hyp.cov));
-  % INF is not a hyperparameter!!!
-  % lb_hyp.inf = log(1e-7);
   lb_hyp.lik = log(1e-7);
-  lb_hyp.mean = -1e6;
+  lb_hyp.mean = minY - 2*(maxY - minY);
   lb = unwrap(lb_hyp)';
+
   ub_hyp.cov = 25 * ones(size(hyp.cov));
-  % INF is not a hyperparameter!!!
-  % ub_hyp.inf = log(7);
   ub_hyp.lik = log(7);
-  ub_hyp.mean = 1e6;
+  ub_hyp.mean = maxY + 2*(maxY - minY);
   ub = unwrap(ub_hyp)';
   
-  % lb = [-10 -10 log(1e-7) log(1e-7) -Inf];
-  % ub = [ 25  25 log(7) log(7) Inf];
   if (strcmp(alg, 'fmincon'))
     options = optimset('GradObj', 'on', ...
             'TolFun', 1e-8, ...
@@ -169,13 +167,16 @@ end
 
 function [nlZ dnlZ] = linear_gp(linear_hyp, s_hyp, inf, mean, cov, lik, x, y)
   % bajeluk TESTING
-  % persistent nanMode;
-  % if ((~isempty(nanMode) && nanMode) || rand() < 0.05)
-  %   nanMode = true;
-  %   nlZ = NaN;
-  %   dnlZ = linear_hyp;
-  %   return;
-  % end
+  persistent nanMode;
+  if ((~isempty(nanMode) && nanMode) || rand() < 0.01)
+    nanMode = true;
+    nlZ = NaN;
+    dnlZ = linear_hyp;
+    if (rand() < 0.01)
+      nanMode = false;
+    end
+    return;
+  end
 
   hyp = rewrap(s_hyp, linear_hyp');
   [nlZ s_dnlZ] = gp(hyp, inf, mean, cov, lik, x, y);

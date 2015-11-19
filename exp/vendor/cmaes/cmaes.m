@@ -353,7 +353,7 @@ end
 
 % bajeluk, 2015-11-10
 MAX_NANS_PER_GENERATION = opts.MaxFunEvals;
-MAX_NANS_TOTAL = 10 * MAX_NANS_PER_GENERATION;
+MAX_NANS_TOTAL = 5 * MAX_NANS_PER_GENERATION;
 endCMAES = false;
 
 i = strfind(opts.SaveFilename, '%'); % remove everything after comment

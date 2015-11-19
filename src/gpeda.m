@@ -122,6 +122,7 @@ while ~evalconds(stop, run, options.stop) % until one of the stop conditions occ
   if (exist('pop', 'var') && ~isempty(pop))
 
     run.attempts{att}.populations{it} = pop;
+    run.attempts{att}.popSize(it) = size(pop, 1);
     run.attempts{att}.tolXDistRatios(it) = tolXDistRatio;
     run.attempts{att}.model = M;
     run.attempts{att}.maxLogPdf = maxLogPdf;
