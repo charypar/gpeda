@@ -168,16 +168,16 @@ end
 
 function [nlZ dnlZ] = linear_gp(linear_hyp, s_hyp, inf, mean, cov, lik, x, y)
   % bajeluk TESTING
-  persistent nanMode;
-  if ((~isempty(nanMode) && nanMode) || rand() < 0.01)
-    nanMode = true;
-    nlZ = NaN;
-    dnlZ = linear_hyp;
-    if (rand() < 0.01)
-      nanMode = false;
-    end
-    return;
-  end
+  % persistent nanMode;
+  % if ((~isempty(nanMode) && nanMode) || rand() < 0.01)
+  %   nanMode = true;
+  %   nlZ = NaN;
+  %   dnlZ = linear_hyp;
+  %   if (rand() < 0.01)
+  %     nanMode = false;
+  %   end
+  %   return;
+  % end
 
   hyp = rewrap(s_hyp, linear_hyp');
   [nlZ s_dnlZ] = gp(hyp, inf, mean, cov, lik, x, y);
