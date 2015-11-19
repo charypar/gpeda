@@ -352,10 +352,9 @@ else
 end
 
 % bajeluk, 2015-11-10
-MAX_NAN_TRIES = opts.MaxFunEvals;
+MAX_NANS_PER_GENERATION = opts.MaxFunEvals;
+MAX_NANS_TOTAL = 10 * MAX_NANS_PER_GENERATION;
 endCMAES = false;
-nanGenerations = 0;
-maxNanGenerations = 10;
 
 i = strfind(opts.SaveFilename, '%'); % remove everything after comment
 if ~isempty(i)
@@ -981,8 +980,7 @@ while isempty(stopflag)
       end
 
       % bajeluk: limit the number of tries of repairing NaNs
-      if (tries > MAX_NAN_TRIES)
-        nanGenerations = nanGenerations + 1;
+      if (tries > MAX_NANS_PER_GENERATION || countevalNaN > MAX_NANS_TOTAL)
         break;
       end
 
@@ -990,14 +988,13 @@ while isempty(stopflag)
     counteval = counteval + 1; % retries due to NaN are not counted
 
     % bajeluk: limit the number of tries of repairing NaNs
-    if (tries > MAX_NAN_TRIES)
-      nanGenerations = nanGenerations + 1;
+    if (tries > MAX_NANS_PER_GENERATION || countevalNaN > MAX_NANS_TOTAL)
       break;
     end
-  end
+  end   % for k=find(isnan(fitness.raw))
 
   % there are still some NaNs :(
-  if (any(isnan(fitness.raw)) || nanGenerations > maxNanGenerations)
+  if (any(isnan(fitness.raw)))
     % discard the current population and
     % END THE CMA-ES -- TODO: with an exception?
     endCMAES = true;
@@ -1585,7 +1582,7 @@ while isempty(stopflag)
   out.stopflag = stopflag;
 
   % bajeluk
-  end
+  end   % if (~exist('endCMAES') || ~endCMAES)
   
   % ----- output generation -----
   if verbosemodulo > 0 && isfinite(verbosemodulo)
