@@ -4,7 +4,7 @@
 # any Matlab license, but it requires Matlab Compiler Runtime (MCR)
 # to be installed on the destination system
 #
-# Final binary file $(FNAME) is moved into $(DESTDIR) directory
+# Final binary file $(FNAME) is copied into $(DESTDIR) directory
 
 FNAME = metacentrum_task_matlab
 DESTDIR = exp/
@@ -18,7 +18,7 @@ OTHERS = exp/bbob_test_01.m exp/metacentrum_task_matlab.m src/gpeda.m
 
 $(OUT):	$(SRC) $(OTHERS)
 	$(MATLAB_COMPILER) -m $(MC_FLAGS) $(MC_INCLUDE) -o $@ $<
-	mv $@ $(DESTDIR)
+	cp -p $@ $(DESTDIR)
 
 all:	$(OUT)
 
