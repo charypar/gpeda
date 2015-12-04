@@ -6,7 +6,9 @@ function metacentrum_master_template(exp_id, varargin)
 % varargin{2}   -- string defining maximum (wall)time for Metacentrum machines
 %                  default: 4h
 
-  EXPPATH_SHORT = ['/storage/plzen1/home/' getenv('LOGNAME') '/prg/gpeda/exp/experiments'];
+  EXPPATH_SHORT = [fileparts(mfilename('fullpath')) filesep 'experiments'];
+  % old version: fixed path
+  % EXPPATH_SHORT = ['/storage/plzen1/home/' getenv('LOGNAME') '/prg/gpeda/exp/experiments'];
   PARAMS_FILE   = [EXPPATH_SHORT filesep exp_id filesep 'params.mat'];
 
   load(PARAMS_FILE);
@@ -31,7 +33,7 @@ function metacentrum_master_template(exp_id, varargin)
   end
 
   pbs_max_workers = 50;
-  pbs_params = ['-l walltime=' walltime ',nodes=^N^:ppn=1,mem=2gb,scratch=1gb,matlab_MATLAB_Distrib_Comp_Engine=^N^'];
+  pbs_params = ['-l walltime=' walltime ',nodes=^N^:ppn=1,mem=1gb,scratch=1gb,matlab_MATLAB_Distrib_Comp_Engine=^N^'];
 
   % sched = findResource('scheduler','type','torque');
   % set(sched,'ClusterOsType', 'unix');

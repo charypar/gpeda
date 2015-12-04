@@ -11,9 +11,6 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   FTP_USERNAME='optim.wz.cz';
   FTP_PASS='metacentrum';
 
-  % setting up paths
-  OUTPUTDIR = getenv('SCRATCHDIR');     % empty/'' if $SCRATCHDIR var does not exist
-
   % rename queued_file to computing_file
   queuedFile = [exppath_short filesep exp_id filesep 'queued_' num2str(id)];
   calculatingFile = [exppath_short filesep exp_id filesep 'calculating_' num2str(id)];
@@ -23,7 +20,7 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
 
   % parameters of the current job
   if (ischar(id)) id = str2num(id); end
-  load([exppath_short filesep exp_id '/params.mat'], 'bbParamDef', 'sgParamDef', 'cmParamDef');
+  load([exppath_short filesep exp_id filesep 'params.mat'], 'bbParamDef', 'sgParamDef', 'cmParamDef');
   [bbParams, sgParams] = getParamsFromIndex(id, bbParamDef, sgParamDef, cmParamDef);
   fun = bbParams.functions(end);
   dim = bbParams.dimensions(end);
@@ -32,7 +29,6 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   else
     model = 'NONE';
   end
-  metaOpts.nInstances = length(bbParams.instances);
 
   % obsolete:
   % convert from string to integer (if supplied on commandline)
@@ -43,6 +39,7 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   % setting up paths (contd.)
   EXPPATH = [exppath_short filesep exp_id];
   RESULTSFILE = [EXPPATH '/' exp_id '_results_' num2str(fun) '_' num2str(dim) 'D_' num2str(id) '.mat'];
+  OUTPUTDIR = getenv('SCRATCHDIR');     % empty/'' if $SCRATCHDIR var does not exist
   % this could be changed to [OUTPUTDIR '/' ...] (or SCRATCHDIR):
   FILESTDOUT = [EXPPATH '/' exp_id '__log__' num2str(id) '.txt'];
 
@@ -65,6 +62,8 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
     metaOpts.machine = fgetl(nodeFile);
     fclose(nodeFile);
   end
+  metaOpts.nInstances = length(bbParams.instances);
+
   if (USE_FILELOG)
     if (~ isfield(metaOpts, 'logdir') || isempty(metaOpts.logdir))
       LOGFILE = DEFAULTLOGFILE;
@@ -93,10 +92,10 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
     % TODO: forward all the text output into a file, but it has to be on a local SCRATCH
   end
 
+  datest = datestr(now,'yyyy-mm-dd HH:MM:ss');
   % LOGFILE loggig start and success of each experiment ID into local/NFS file
   if (USE_FILELOG)
     flog = fopen(LOGFILE, 'a');
-    datest = datestr(now,'yyyy-mm-dd HH:MM:ss');
     fprintf(flog, '%s  **%s** at [%s] %d started.\n', datest, exp_id, metaOpts.machine, id);
     fclose(flog);
   end
@@ -112,7 +111,6 @@ function metacentrum_task_matlab(exp_id, exppath_short, id, varargin)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-  datest = datestr(now,'yyyy-mm-dd HH:MM:ss');
 
   % STDOUT logging
   if (~isempty(FILESTDOUT))
